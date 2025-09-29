@@ -1,0 +1,248 @@
+/* src/components/MainLayout.module.css */
+
+.layout {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+  background-color: #f7f8fc;
+}
+
+/* --- BARRA LATERAL (VISÍVEL APENAS EM DESKTOPS) --- */
+.sidebar {
+  height: 100vh;
+  width: 260px;
+  background-color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid #e0e0e0;
+  flex-shrink: 0;
+  transition: width 0.3s ease; /* Animação suave */
+}
+.sidebarHeader {
+  padding: 20px;
+  border-bottom: 1px solid #e0e0e0;
+  text-align: center; /* Centraliza o logo/título */
+}
+.sidebarLogo {
+  height: 50px;
+  width: auto;
+}
+.nav {
+  flex-grow: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 15px 0;
+}
+.navLink {
+  display: flex;
+  align-items: center;
+  padding: 12px 20px;
+  text-decoration: none;
+  color: #555;
+  border-radius: 6px;
+  margin: 4px 10px;
+  transition: background-color 0.2s, color 0.2s;
+}
+.navLink:hover {
+  background-color: #f0f2f5;
+  color: #4B70E2;
+}
+.activeLink {
+  background-color: #e6eefc;
+  color: #4B70E2;
+  font-weight: bold;
+}
+.navIcon {
+  margin-right: 12px;
+  font-size: 20px;
+}
+.navSectionTitle {
+  padding: 10px 20px 5px 20px;
+  margin-top: 15px;
+  font-size: 0.8rem;
+  font-weight: bold;
+  color: #888;
+  text-transform: uppercase;
+}
+.userInfo {
+  padding: 20px;
+  border-top: 1px solid #e0e0e0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.userEmail {
+  font-size: 14px;
+  color: #333;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.logoutButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #d32f2f;
+  font-size: 22px;
+}
+
+/* --- ÁREA DE CONTEÚDO PRINCIPAL --- */
+.mainContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+.header {
+  padding: 15px 20px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e0e0e0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex; /* Para alinhar o botão de menu */
+  align-items: center;
+}
+.header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+.content {
+  padding: 20px;
+  flex: 1;
+}
+
+/* --- ESTILOS PARA O MENU MOBILE (HAMBÚRGUER) --- */
+.hamburgerButton {
+  display: none; /* Escondido por padrão em telas grandes */
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  margin-right: 15px;
+  font-size: 24px;
+  color: #333;
+}
+.mobileNav {
+  display: none; /* Escondido por padrão */
+}
+
+/* ======================================================= */
+/* --- MEDIA QUERY: ESTILOS PARA TELAS PEQUENAS --- */
+/* ======================================================= */
+@media (max-width: 768px) {
+  /* Esconde a barra lateral do desktop */
+  .sidebar {
+    display: none;
+  }
+
+  /* Mostra o botão de hambúrguer no cabeçalho */
+  .hamburgerButton {
+    display: block;
+  }
+
+  /* Estiliza o menu mobile (que aparece ao clicar) */
+  .mobileNav {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0;
+    left: -100%; /* Começa fora da tela */
+    width: 280px;
+    height: 100%;
+    background-color: #ffffff;
+    z-index: 1000;
+    transition: left 0.3s ease-in-out;
+    box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+  }
+
+  /* Classe para mostrar o menu mobile */
+  .mobileNav.open {
+    left: 0;
+  }
+
+  /* Fundo escuro atrás do menu mobile */
+  .overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    z-index: 999;
+  }
+}
+
+.alertLink {
+  background-color: #ffecea;  /* um fundo levemente avermelhado */
+  color: #d32f2f;             /* texto vermelho escuro */
+}
+
+/* opcional: sobrescreve também o ícone */
+.alertLink .navIcon {
+  color: #d32f2f;
+}
+
+/* se quiser um badgezinho, crie algo assim: */
+.alertBadge {
+  position: absolute;
+  top: 8px;
+  right: 18px;
+  width: 8px;
+  height: 8px;
+  background-color: #d32f2f;
+  border-radius: 50%;
+}
+
+.langBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  padding: 6px 10px;
+  cursor: pointer;
+  line-height: 1;
+  transition: box-shadow .15s ease, border-color .15s ease, transform .05s ease;
+}
+.langBtn:hover { box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+.langBtn:active { transform: translateY(1px); }
+.langBtn .langCode { font-weight: 600; font-size: 12px; color: #334155; }
+
+/* Popover com as opções */
+.langList {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 190px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 6px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.12);
+  z-index: 50;
+}
+.langItem {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 24px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 8px;
+  color: #0f172a;
+  text-align: left;
+}
+.langItem .langLabel { font-size: 14px; }
+.langItem .langCodeSmall { font-size: 12px; color: #64748b; }
+.langItem:hover { background: #f8fafc; }
+.langItem.active {
+  background: #eef2ff;
+  cursor: default;
+}
+.langMenu { margin-left: auto; }

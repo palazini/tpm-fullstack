@@ -1,0 +1,149 @@
+/* src/components/OperatorDashboard.module.css */
+
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 20px; /* Espaçamento entre os cards */
+}
+
+.card {
+  background-color: #ffffff;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.cardTitle {
+  margin-top: 0;
+  margin-bottom: 20px;
+  font-size: 1.25rem;
+  color: #333;
+  display: flex;
+  align-items: center;
+}
+
+.titleIcon {
+  margin-right: 10px;
+  color: #007bff;
+}
+
+.formGroup {
+  margin-bottom: 16px;
+}
+
+.formGroup label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #555;
+}
+
+.select,
+.textarea {
+  width: 100%;
+  padding: 10px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  box-sizing: border-box;
+  font-family: inherit;
+  font-size: 1rem;
+}
+
+.textarea {
+  resize: vertical; /* Permite que o usuário redimensione a altura */
+}
+
+.submitButton {
+  width: auto;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  background-color: #007bff;
+  color: white;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: bold;
+  transition: background-color 0.2s;
+}
+
+.submitButton:hover {
+  background-color: #0056b3;
+}
+
+/* Estilos da Lista de Chamados */
+.chamadoList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.chamadoItem {
+  background-color: #f9f9f9; /* Um cinza bem claro para diferenciar do fundo */
+  padding: 16px;
+  border-radius: 6px; /* Bordas arredondadas */
+  margin-bottom: 12px; /* Espaçamento entre os cards */
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  border: 1px solid #eef0f3;
+  /* Removemos o border-bottom */
+  display: flex; /* Mantemos o flex para o status badge */
+  justify-content: space-between;
+  align-items: center;
+}
+
+.chamadoItem:last-child {
+  border-bottom: none;
+}
+
+.chamadoInfo strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #333;
+}
+
+.chamadoInfo p {
+  margin: 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.statusBadge {
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 0.8rem;
+  font-weight: bold;
+  color: white;
+  white-space: nowrap;
+}
+
+/* Cores dos status */
+.aberto {
+  background-color: #007bff; /* Azul */
+}
+
+.emandamento {
+  background-color: #ffc107; /* Amarelo */
+  color: #333;
+}
+
+.concluido {
+  background-color: #28a745; /* Verde */
+}
+
+.chamadoLink {
+  text-decoration: none;
+  color: inherit;
+  display: block; /* Opcional, para o link ocupar toda a largura */
+}
+
+.chamadoLink:hover > .chamadoItem {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  background-color: #ffffff; /* Fundo do item também muda no hover */
+}
+
+.descriptionPreview {
+  white-space: nowrap; /* Impede a quebra de linha */
+  overflow: hidden; /* Esconde o texto que transborda */
+  text-overflow: ellipsis; /* Adiciona "..." */
+  max-width: 500px; /* Define um limite. Ajuste se achar necessário. */
+}

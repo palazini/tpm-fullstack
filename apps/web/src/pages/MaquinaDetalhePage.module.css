@@ -1,0 +1,403 @@
+/* src/pages/MaquinaDetalhePage.module.css */
+
+.header {
+  padding: 24px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e0e0e0;
+}
+.header h1 {
+  margin: 0;
+  font-size: 1.75rem;
+}
+.header p {
+  margin: 4px 0 0 0;
+  color: #555;
+}
+
+.tabs {
+  flex-wrap: wrap; /* Permite quebra em telas pequenas */
+  gap: 8px; /* Espaço entre eles */
+  display: flex;
+  border-bottom: 1px solid #ccc;
+  background-color: #f9f9f9;
+}
+.tabButton {
+  padding: 14px 20px;
+  cursor: pointer;
+  border: none;
+  background-color: transparent;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #555;
+  border-bottom: 3px solid transparent;
+}
+.tabButton.active {
+  color: #4B70E2;
+  border-bottom: 3px solid #4B70E2;
+}
+
+.tabContent {
+  padding: 20px;
+}
+
+/* --- Estilos para a lista de histórico --- */
+.chamadoList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px; 
+}
+.chamadoCard {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+.chamadoItem {
+  background-color: #ffffff;
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid #eef0f3;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+.chamadoItem:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+}
+.chamadoItem strong {
+  display: block;
+  margin-bottom: 4px;
+}
+.chamadoItem p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #666;
+}
+.chamadoItem small {
+  font-size: 0.8rem;
+  color: #888;
+  margin-top: 8px;
+  display: block;
+}
+
+/* --- Estilos para a aba de planos --- */
+.actionButton:hover {
+  opacity: 0.85;
+}
+.form h4 {
+  margin-top: 0;
+  margin-bottom: 15px;
+}
+.input, .select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+/* --- Estilos para a aba de checklist --- */
+.checklistEditor {
+  background-color: #ffffff;
+  padding: 24px;
+  border-radius: 8px;
+  border: 1px solid #eef0f3;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+.checklistItemManage {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border-bottom: 1px solid #f0f0f0;
+}
+.checklistItemManage:last-child {
+  border-bottom: none;
+}
+.checklistItemManage span {
+  flex-grow: 1;
+}
+.checklistInputForm {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+.checklistInput {
+  flex-grow: 1;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+.checklistAddButton {
+  padding: 8px 15px;
+  border: none;
+  background-color: #28a745;
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+}
+.historyReport {
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px dashed #ccc;
+}
+.dayEntry {
+  display: grid;
+  grid-template-columns: 1fr 2fr 2fr;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+.dayEntry:last-child {
+  border-bottom: none;
+}
+.dayHeader {
+  font-weight: bold;
+  color: #333;
+}
+.turnStatus {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.turnStatus.completed {
+  color: #28a745;
+}
+.turnStatus.pending {
+  color: #dc3545;
+}
+.detailItem {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+.detailItem:last-child {
+  border-bottom: none;
+}
+
+/* --- Estilos para a aba de operadores --- */
+.operatorList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.opActionButton {
+  background: none;
+  border: 1px solid #ccc;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: background-color 0.2s;
+}
+.removeButton {
+  color: #dc3545;
+}
+.opActionButton:hover {
+  background-color: #e9ecef;
+}
+
+.corretiva {
+  border-left-color: #dc3545; 
+  border-left-width: 6px;
+}
+
+.preventiva {
+  border-left-color: #0d6efd; 
+  border-left-width: 6px;
+}
+
+.preditiva {
+  border-left-color: #ffc107; 
+  border-left-width: 6px;
+}
+
+.normal {
+  border-left-color: #eef0f3; 
+  border-left-width: 6px;
+}
+
+.concluidoCard {
+  border-left: none !important;
+}
+
+@media (max-width: 768px) {
+  .header h1 {
+    font-size: 1.5rem;
+  }
+
+  /* Ajusta o relatório de checklist para telas pequenas */
+  .dayEntry {
+    grid-template-columns: 1fr; /* Cada item ocupa uma linha */
+    gap: 10px;
+    text-align: center;
+    padding: 16px 8px;
+  }
+
+  .dayHeader {
+    display: none; /* Esconde o cabeçalho da tabela em telas pequenas */
+  }
+
+  .turnStatus::before {
+    font-weight: bold;
+    margin-right: 8px;
+  }
+
+  /* Adiciona um label de texto antes do status de cada turno */
+  .dayEntry .turnStatus:nth-of-type(1)::before {
+    content: '1º Turno:';
+  }
+  .dayEntry .turnStatus:nth-of-type(2)::before {
+    content: '2º Turno:';
+  }
+}
+
+
+
+@media (max-width: 768px) {
+  .formGroup {
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .checklistInputForm {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .checklistAddButton {
+    width: 100%;
+  }
+}
+
+.qrCodeSection {
+  display: flex; /* Adicionamos flexbox */
+  flex-direction: column; /* Para alinhar os itens em coluna */
+  align-items: center; /* Para centralizar horizontalmente */
+  gap: 0px; /* Espaço entre o QR Code e o botão */
+  text-align: center;
+  padding: 20px;
+  background-color: #ffffff;
+  border-radius: 8px;
+  border: 1px solid #eef0f3;
+}
+
+.qrCodeSection h3 {
+  margin-top: 0;
+}
+
+.qrCodeCanvas {
+  padding: 15px;
+  background-color: white;
+  border-radius: 8px;
+  display: inline-block;
+  border: 1px solid #eee;
+}
+
+.downloadButton { /* Renomeado de printButton para clareza */
+  margin-top: 20px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  background-color: #4B70E2;
+  color: white;
+  cursor: pointer;
+  font-weight: bold;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.eventoNoCalendario {
+  font-size: 0.8rem;
+  padding: 2px 5px;
+}
+
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.legendBox {
+  width: 16px;
+  height: 16px;
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 4px;
+}
+
+.formGroup {
+  margin-bottom: 16px;
+}
+.formGroup label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: #333;
+}
+.input,
+.textarea {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease;
+}	
+.button {
+  display: inline-block;
+  background-color: #006400;
+  color: #fff;
+  border: none;
+  padding: 10px 20px;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.button:hover {
+  background-color: #004d00;
+}
+
+.button:active {
+  transform: scale(0.98);
+}
+.textarea:focus {
+  outline: none;
+  border-color: #006400;
+}
+
+/* textarea um pouco maior */
+.textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.modalButton {
+  background-color: #006400;      /* verde escuro, mesmo tom de “iniciado” */
+  color: #fff;                    /* texto branco */
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  margin-top: 1rem;
+  transition: background-color 0.2s ease;
+  margin-left: 0.5rem;
+}
+
+.modalButton:hover {
+  background-color: #004d00;      /* um pouco mais escuro no hover */
+}

@@ -1,0 +1,302 @@
+/* src/pages/GerirUtilizadoresPage.module.css */
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 20px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #eee;
+}
+
+.header h1 {
+  margin: 0;
+}
+
+.button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  background-color: #4B70E2;
+  color: white;
+  cursor: pointer;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.userListContainer {
+  background-color: #ffffff;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.userList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.userListHeader {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr auto;
+  padding: 12px 16px;
+  font-weight: 600;
+  color: #333;
+  border-bottom: 1px solid #ddd;
+  background-color: #fafafa;
+}
+
+.userItem {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr auto;
+  align-items: center;
+  gap: 15px;
+  padding: 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.userItem:last-child {
+  border-bottom: none;
+}
+
+.userItem strong {
+  font-weight: 500;
+}
+
+.userItem span {
+  color: #555;
+  text-transform: capitalize;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.actionButton {
+  padding: 6px;
+  border: 1px solid #4B70E2;
+  border-radius: 4px;
+  background-color: transparent;
+  color: #4B70E2;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: background-color 0.2s;
+}
+
+.actionButton:hover {
+  background-color: rgba(75, 112, 226, 0.1);
+}
+
+.deleteButton {
+  border-color: #e74c3c;
+  color: #e74c3c;
+}
+
+.deleteButton:hover {
+  background-color: rgba(231, 76, 60, 0.1);
+}
+
+/* Estilos para o formulário no Modal */
+.formGroup {
+  margin-bottom: 15px;
+}
+.formGroup label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 500;
+}
+.input, .select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+/* 1) Desktop (largura > 900px): grid de colunas */
+.userListHeader,
+.userItem {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr auto;
+  align-items: center;
+  gap: 16px;
+}
+
+/* Cabeçalho */
+.userListHeader {
+  padding: 16px;
+  background: #fafafa;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+/* Itens */
+.userItem {
+  padding: 12px 16px;
+  border-bottom: 1px solid #eee;
+}
+
+/* ===========================================
+   2) Tablet (≤ 900px): cartões empilhados
+   =========================================== */
+@media (max-width: 900px) {
+  /* Container com espaçamento extra */
+  .userListContainer {
+    padding: 16px;
+  }
+
+  /* Esconde cabeçalho de colunas */
+  .userListHeader {
+    display: none;
+  }
+
+  /* Cada item vira um cartão flex-column */
+  .userItem {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    margin-bottom: 12px;
+    padding: 12px 16px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+
+  /* Nome completo em destaque */
+  .userItem > strong {
+    font-size: 1rem;
+    margin-bottom: 4px;
+  }
+
+  /* Username e função abaixo do nome */
+  .userItem > span:nth-of-type(1),
+  .userItem > span:nth-of-type(2) {
+    font-size: 0.9em;
+    color: #666;
+  }
+
+  /* Botões alinhados à direita no fim do cartão */
+  .actions {
+    align-self: flex-end;
+    margin-top: 8px;
+  }
+}
+
+/* ===========================================
+   3) Mobile (≤ 600px): simplificação extra
+   =========================================== */
+@media (max-width: 600px) {
+  /* Ainda mantém o estilo de cartão */
+  .userItem {
+    padding: 10px 12px;
+    gap: 2px;
+  }
+
+  /* Nome um pouco menor */
+  .userItem > strong {
+    font-size: 0.95rem;
+  }
+
+  /* Textos ainda mais sutis */
+  .userItem > span {
+    font-size: 0.85em;
+  }
+
+  /* Botões maiores tocáveis */
+  .actions button {
+    padding: 6px;
+    margin-right: 8px;
+  }
+}
+
+.userListToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid #eee;
+}
+
+.filterGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filterLabel {
+  font-size: 0.9rem;
+  color: #555;
+}
+
+/* A seletora já herda de .select; aqui só damos pequenos ajustes */
+.filterSelect {
+  min-width: 180px;
+}
+
+/* Foco consistente com sua paleta (#4B70E2) */
+.input:focus,
+.select:focus,
+.filterSelect:focus {
+  outline: none;
+  border-color: #4B70E2;
+  box-shadow: 0 0 0 3px rgba(75, 112, 226, 0.15);
+}
+
+/* === Responsivo da toolbar === */
+@media (max-width: 900px) {
+  .userListToolbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .filterGroup {
+    width: 100%;
+  }
+  .filterSelect {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 600px) {
+  .filterLabel {
+    font-size: 0.85rem;
+  }
+}
+
+.userListToolbar .filterGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;         /* mantém na mesma linha */
+}
+
+/* O label ocupa o espaço natural dele e NÃO encolhe */
+.filterLabel {
+  white-space: nowrap;       /* não quebra */
+  flex: 0 0 auto;            /* não deixa encolher */
+  /* remova qualquer overflow/ellipsis que tinha antes */
+}
+
+/* O select se ajusta ao espaço restante */
+.filterSelect {
+  flex: 1 1 160px;           /* cresce/encolhe conforme espaço */
+  min-width: 120px;          /* limite para não ficar minúsculo */
+  width: auto;
+}
+
+/* Em telas ≤900px você já empilha; mantemos isso */
+@media (max-width: 900px) {
+  .userListToolbar { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .userListToolbar .filterGroup { width: 100%; }
+  .filterSelect { width: 100%; min-width: 0; }
+}
+

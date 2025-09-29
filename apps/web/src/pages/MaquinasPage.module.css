@@ -1,0 +1,156 @@
+/* src/pages/MaquinasPage.module.css */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.card {
+  height: 55px;
+  background-color: #ffffff;
+  border-radius: 8px;
+  padding: 24px;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  text-decoration: none;
+  color: inherit;
+  transition: box-shadow 0.2s, transform 0.2s;
+  border: 1px solid #eef0f3;
+  border-left-width: 5px;
+  /* Adicionamos display flex para ajudar a alinhar o conteúdo interno */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.card h2 {
+  margin-top: 0;
+  margin-bottom: 8px;
+  color: #333;
+}
+
+.card p {
+  margin: 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+/* Estilos de Destaque */
+.statusNormal {
+  border-left-color: #eef0f3;
+}
+.statusCorretiva {
+  border-left-color: #dc3545;
+}
+.statusPreventiva {
+  border-left-color: #0d6efd;
+}
+.statusPreditiva {
+  border-left-color: #ffc107;
+}
+
+/* Legenda */
+.legendContainer {
+  display: flex;
+  justify-content: flex-start;
+  gap: 20px;
+  margin-bottom: 20px;
+  padding: 10px;
+  border-radius: 8px;
+  background-color: #ffffff;
+  border: 1px solid #eef0f3;
+}
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.legendColorBox {
+  width: 15px;
+  height: 15px;
+  border-radius: 4px;
+}
+.legendColorBox.statusCorretiva {
+  background-color: #dc3545;
+}
+.legendColorBox.statusPreventiva {
+  background-color: #0d6efd;
+}
+.legendColorBox.statusPreditiva {
+  background-color: #ffc107;
+}
+
+/* --- ESTILO ATUALIZADO PARA O CARD DE ADICIONAR --- */
+.addCard {
+  background-color: transparent;
+  border: 2px dashed #dee2e6;
+  cursor: pointer;
+}
+
+.addIcon {
+  font-size: 4rem;
+  color: #adb5bd;
+}
+
+.addCard:hover {
+  background-color: #f8f9fa;
+  border-color: #adb5bd;
+  color: #495057;
+  transform: none; /* Remove o efeito de levantar para este card */
+  box-shadow: none;
+}
+
+/* certifique-se de que o card é posição de referência */
+.card { position: relative; }
+
+/* botão 3 pontinhos */
+.menuButton {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+}
+.menuButton:hover { background: #f2f2f2; }
+
+/* dropdown */
+.menu {
+  position: absolute;
+  top: 36px;
+  right: 8px;
+  min-width: 160px;
+  background: #fff;
+  border: 1px solid #e6e6e6;
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(0,0,0,.08);
+  z-index: 2;
+  padding: 6px;
+}
+.menuItem {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  color: #222;
+  border-radius: 6px;
+  text-align: left;
+}
+.menuItem:hover { background: #f6f6f6; }
+.danger { color: #c62828; }
+
+/* link ocupa a área inteira “clicável” do card */
+.cardLink { text-decoration: none; color: inherit; display: block; width: 100%; height: 100%; }
