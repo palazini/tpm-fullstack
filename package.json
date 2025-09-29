@@ -3,20 +3,10 @@
   "private": true,
   "packageManager": "pnpm@9",
   "scripts": {
-    "dev": "concurrently -n shared,api,web -c auto \"pnpm --filter \\\"@manutencao/shared\\\" build --watch\" \"pnpm --filter \\\"@manutencao/api\\\" dev\" \"pnpm --filter \\\"@manutencao/web\\\" dev\"",
-    "dev:shared": "pnpm --filter \"@manutencao/shared\" build --watch",
-    "dev:api": "pnpm --filter \"@manutencao/api\" dev",
-    "dev:web": "pnpm --filter \"@manutencao/web\" dev",
+    "dev": "pnpm -r --parallel dev",
     "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
     "lint": "pnpm -r lint",
-    "format": "pnpm -r format",
-    "clean": "node -e \"require('fs').rmSync('packages/shared/dist',{recursive:true,force:true})\""
-  },
-  "devDependencies": {
-    "concurrently": "^9.0.0",
-    "typescript": "^5.9.2"
-  },
-  "dependencies": {
-    "zod": "^3.23.8"
+    "format": "pnpm -r format"
   }
 }

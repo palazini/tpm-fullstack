@@ -1,23 +1,20 @@
 {
-    "compilerOptions":  {
-                            "target":  "ES2020",
-                            "module":  "commonjs",
-                            "rootDir":  "./src",
-                            "outDir":  "./dist",
-                            "strict":  true,
-                            "esModuleInterop":  true,
-                            "moduleResolution":  "node",
-                            "resolveJsonModule":  true,
-                            "skipLibCheck":  true,
-                            "types":  [
-                                          "node"
-                                      ],
-                            "typeRoots":  [
-                                              "./src/types",
-                                              "./node_modules/@types"
-                                          ]
-                        },
-    "include":  [
-                    "src/**/*.ts"
-                ]
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "commonjs",
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "strict": true,
+    "esModuleInterop": true,
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "types": ["node", "express"],
+    "typeRoots": ["./src/types", "./node_modules/@types"]
+  },
+  "references": [
+    { "path": "../../packages/shared" }
+  ],
+  "include": ["src/**/*.ts"]
 }

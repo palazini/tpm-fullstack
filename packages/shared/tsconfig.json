@@ -1,5 +1,7 @@
 {
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    "composite": true,
     "target": "ES2019",
     "module": "CommonJS",
     "moduleResolution": "Node",

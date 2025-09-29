@@ -70,14 +70,15 @@ checklistsRouter.post('/checklists/daily/submit', async (req, res) => {
 
     // 2) cria chamados preditivos para itens 'nao' (sem duplicar)
     let gerados = 0;
-    for (const [pergunta, valor] of Object.entries(respostas as Record<string,string>)) {
+    for (const [pergunta, valor] of Object.entries(respostas as Record<string, string>)) {
       if (valor !== 'nao') continue;
+
       const key = slugify(pergunta);
 
       // já existe aberto/andamento para este item desta máquina?
       const { rows: ja } = await pool.query(
         `SELECT 1
-           FROM chamados
+          FROM chamados
           WHERE maquina_id = $1
             AND tipo = 'preditiva'
             AND checklist_item_key = $2
@@ -89,15 +90,22 @@ checklistsRouter.post('/checklists/daily/submit', async (req, res) => {
 
       const descricao = `Checklist: item "${pergunta}" marcado como NÃO.`;
 
-      await pool.query(
-        `INSERT INTO chamados
-           (maquina_id, tipo, status, descricao, criado_por_id, item, checklist_item_key)
-         VALUES ($1, 'preditiva', 'Aberto', $2, $3, $4, $5)`,
-        [maquinaId, descricao, operadorId, pergunta, key]
-      );
-
-      try { sseBroadcast?.({ topic: 'chamados', action: 'created' }); } catch {}
-      gerados++;
+      try {
+        await pool.query(
+          `INSERT INTO chamados
+            (maquina_id, tipo, status, descricao, criado_por_id, item, checklist_item_key)
+          VALUES ($1, 'preditiva', 'Aberto', $2, $3, $4, $5)`,
+          [maquinaId, descricao, operadorId, pergunta, key]
+        );
+        try { sseBroadcast?.({ topic: 'chamados', action: 'created' }); } catch {}
+        gerados++;
+      } catch (e: any) {
+        if (e.code === '23505') {
+          // Já existe uma preditiva ativa p/ (maquina_id, checklist_item_key) -> ignorar
+        } else {
+          throw e;
+        }
+      }
     }
 
     res.json({ ok: true, chamados_gerados: gerados });
