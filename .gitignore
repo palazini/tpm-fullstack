@@ -1,0 +1,28 @@
+# na raiz do monorepo
+Set-Content .gitignore @"
+# Node/TypeScript (monorepo)
+node_modules/
+dist/
+build/
+coverage/
+.tmp/
+.temp/
+*.log
+
+# Ambiente / segredos
+.env
+.env.*
+*.local
+
+# Vite/Next/etc (se algum dia usar)
+.next/
+.vercel/
+.vite/
+
+# IDE
+.vscode/
+.idea/
+"@
+
+git add .
+git commit -m "chore: add .gitignore"
