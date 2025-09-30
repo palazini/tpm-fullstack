@@ -1,3 +1,4 @@
+// src/pages/AbrirChamadoManutentor.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { FiPlusCircle } from "react-icons/fi";
@@ -10,12 +11,13 @@ export default function AbrirChamadoManutentor({ user }) {
 
   const [selectedMachineId, setSelectedMachineId] = useState("");
   const [descricao, setDescricao] = useState("");
-  const [assumirAgora, setAssumirAgora] = useState(true);
+  // ✅ desmarcada por padrão
+  const [assumirAgora, setAssumirAgora] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [maquinas, setMaquinas] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const podeAbrir = user?.role === "manutentor" || user?.role === "gestor";
+  const podeAbrir = (user?.role === "manutentor" || user?.role === "gestor");
 
   useEffect(() => {
     (async () => {
@@ -46,38 +48,56 @@ export default function AbrirChamadoManutentor({ user }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (desabilitado) return;
+    if (desabilitado || enviando) return;
 
     try {
       setEnviando(true);
 
-      if (!selectedMachineId) throw new Error("Selecione uma máquina válida.");
-      if (!user?.email) throw new Error("Seu usuário não possui e-mail carregado.");
+      if (!selectedMachineId) {
+        throw new Error("Selecione uma máquina válida.");
+      }
+      if (!user?.email) {
+        throw new Error("Seu usuário não possui e-mail carregado.");
+      }
+      if (!descricao || descricao.trim().length < 5) {
+        throw new Error("Descreva o problema (mín. 5 caracteres).");
+      }
 
-      // pega a máquina escolhida para extrair tag/nome
-      const maquinaSel = maquinas.find(m => String(m.id) === String(selectedMachineId));
+      const maquinaSel = maquinas.find(
+        (m) => String(m.id) === String(selectedMachineId)
+      );
       if (!maquinaSel) throw new Error("Máquina não encontrada na lista local.");
 
+      const assume = !!assumirAgora;
+
       const payload = {
-        // o back atual exige tag ou nome:
-        maquinaTag:  maquinaSel.tag ?? undefined,
-        maquinaNome: maquinaSel.nome ?? undefined,
+        // Identificação da máquina
+        maquinaId: String(selectedMachineId),
+        // opcionais (o back usa maquinaId, mas pode aproveitar)
+        maquinaNome: maquinaSel?.nome || undefined,
+        maquinaTag:  maquinaSel?.tag  || undefined,
 
-        // mantém também se o seu back já usa/precisa:
-        maquinaId: selectedMachineId,
-
+        // Chamado
         tipo: "corretiva",
         descricao: descricao.trim(),
-        assumir: !!assumirAgora,
+
+        // Atribuição imediata
+        status: assume ? "Em Andamento" : "Aberto",
+        manutentorEmail: assume ? user.email : undefined,
+
+        // opcional (o back também pega do header, se houver)
         criadoPorEmail: user.email,
-        ...(assumirAgora ? { atribuidoParaEmail: user.email } : {})
       };
 
-      const novo = await criarChamado(payload);
+      await criarChamado(payload, {
+        role: user?.role || "manutentor",
+        email: user?.email,
+      });
+
       toast.success(t("techOpen.success.created"));
       setSelectedMachineId("");
       setDescricao("");
-      void novo;
+      setAssumirAgora(false);
     } catch (err) {
       console.error(err);
       toast.error(err?.message || t("techOpen.errors.create"));

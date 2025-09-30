@@ -236,19 +236,42 @@ export async function atribuirChamado(id, { manutentorEmail, role, email }) {
   if (!res.ok) throw new Error(data?.error || `Erro ao atribuir (${res.status})`);
   return data;
 }
+
 export async function removerAtribuicao(id, { role, email }) {
-  const res = await fetch(`${BASE}/chamados/${id}/remover-atribuicao`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "x-user-role": role, "x-user-email": email }
+  const r = await fetch(`${BASE}/chamados/${id}/atribuir`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json', 'x-user-role': role, 'x-user-email': email },
   });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data?.error || `Erro ao remover atribuiÃ§Ã£o (${res.status})`);
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data?.error || `Erro ao remover atribuição (${r.status})`);
+  return data;
+}
+// Assumir (MANUTENTOR ou gestor) — atribui ao usuário logado e põe Em Andamento
+export async function assumirChamado(id, { role, email }) {
+  const r = await fetch(`${BASE}/chamados/${id}/assumir`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-role': role, 'x-email': email },
+  });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data?.error || `Erro ao assumir (${r.status})`);
+  return data;
+}
+
+// Trocar status (gestor pode qualquer; manutentor designado pode Em Andamento/Concluido)
+export async function atualizarStatusChamado(id, status, { role, email }) {
+  const r = await fetch(`${BASE}/chamados/${id}/status`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-role': role, 'x-email': email },
+    body: JSON.stringify({ status }),
+  });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data?.error || `Erro ao atualizar status (${r.status})`);
   return data;
 }
 export async function atenderChamado(id, auth = {}) {
   const res = await fetch(`${BASE}/chamados/${id}/atender`, {
     method: "POST",
-    headers: buildAuthHeaders({ role: auth.role || "manutentor", email: auth.email })
+    headers: { "Content-Type": "application/json", "x-user-role": auth.role || "manutentor", "x-user-email": auth.email }
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data?.error || `Erro ao atender (${res.status})`);
@@ -705,6 +728,13 @@ export async function renomearMaquina(id, { nome, syncTag = true }, auth = {}) {
     throw err;
   }
   return data; // { id, nome, tag, setor, critico }
+}
+
+export async function listarEventosChamado(id) {
+  const r = await fetch(`${BASE}/chamados/${id}/eventos`);
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data?.error || `Erro ao listar eventos (${r.status})`);
+  return data.items || [];
 }
 
 export function connectSSE(handlers = {}) {

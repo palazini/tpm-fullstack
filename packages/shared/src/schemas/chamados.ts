@@ -20,18 +20,34 @@ export const ChecklistItemSchema = z.union([
 ]);
 
 // Criar chamado (o criador vem do header no back; aqui só payload)
-export const CreateChamadoSchema = z.object({
-  maquinaId: z.string().trim().min(1).optional(),
-  maquinaTag: z.string().trim().min(1).optional(),
-  maquinaNome: z.string().trim().min(1).optional(),
-  descricao: z.string().trim().min(5),
-  tipo: z.enum(["corretiva", "preventiva"]).optional(),
-  manutentorEmail: z.string().email().optional(),
-  checklistItems: z.array(z.string().trim().min(1)).optional(),
-  status: z.string().trim().optional(),
-  agendamentoId: z.string().trim().min(1).optional(),
-  criadoPorEmail: z.string().email().optional(), // se quiser aceitar no body
-});
+const optionalNonEmptyString = z.preprocess((v) => {
+  if (typeof v === "string" && v.trim() === "") return undefined;
+  return v;
+}, z.string().trim().min(1).optional());
+
+const optionalEmail = z.preprocess((v) => {
+  if (typeof v === "string" && v.trim() === "") return undefined;
+  return v;
+}, z.string().email().optional());
+
+export const CreateChamadoSchema = z
+  .object({
+    // Identificação da máquina (qualquer um dos 3)
+    maquinaId: optionalNonEmptyString,
+    maquinaTag: optionalNonEmptyString,
+    maquinaNome: optionalNonEmptyString,
+
+    descricao: z.string().trim().min(5),
+    tipo: z.enum(["corretiva", "preventiva"]).optional(),
+    manutentorEmail: optionalEmail,          // usado quando “assumir agora”
+    checklistItems: z.array(z.string().trim().min(1)).optional(),
+    status: z.string().trim().optional(),    // "Aberto" | "Em Andamento"
+    agendamentoId: optionalNonEmptyString,
+
+    // aceita mas não depende (pode vir do header)
+    criadoPorEmail: optionalEmail,
+  })
+  .strip(); // descarta chaves desconhecidas em vez de falhar
 
 // Concluir chamado
 export const ConcluirChamadoSchema = z.object({

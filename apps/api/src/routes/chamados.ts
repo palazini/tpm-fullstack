@@ -3,15 +3,12 @@ import { requireRole } from '../middlewares/requireRole';
 import { pool, withTx } from '../db';
 import { CHAMADO_STATUS, normalizeChamadoStatus, isStatusAtivo } from '../utils/status';
 import { sseBroadcast } from '../utils/sse';
-import { z } from "zod";
 import {
   CreateChamadoSchema,
   ConcluirChamadoSchema,
   PatchChecklistSchema,
   ObservacaoSchema,
-  ChecklistItemSchema,
 } from "@manutencao/shared";
-
 
 export const chamadosRouter = Router();
 
@@ -650,9 +647,9 @@ chamadosRouter.patch(
  */
 chamadosRouter.post("/chamados", async (req, res) => {
   try {
-    const user = (req as any).user as { role?: string; email?: string } | undefined;
+    const auth = (req as any).user as { role?: string; email?: string } | undefined;
 
-    // ✅ validação de entrada (Zod)
+    // validação
     const parsed = CreateChamadoSchema.safeParse(req.body ?? {});
     if (!parsed.success) {
       return res.status(400).json({
@@ -661,164 +658,113 @@ chamadosRouter.post("/chamados", async (req, res) => {
       });
     }
 
-    const criadorEmail = user?.email;
-    if (!criadorEmail) {
-      return res.status(401).json({ error: "USUARIO_NAO_CADASTRADO" });
-    }
+    const data = parsed.data;
 
-    const {
-      maquinaTag,
-      maquinaNome,
-      descricao,
-      status = "Aberto",
-      manutentorEmail,
-      agendamentoId,
-      checklistItems,
-    } = parsed.data;
+    // quem está criando (header > body)
+    const criadorEmail = auth?.email || data.criadoPorEmail;
+    if (!criadorEmail) return res.status(401).json({ error: "USUARIO_NAO_CADASTRADO" });
 
-    // mantém sua normalização de status e regra de "ativo"
-    const statusNorm = normalizeChamadoStatus(status) ?? CHAMADO_STATUS.ABERTO;
-    if (!isStatusAtivo(statusNorm)) {
-      return res.status(400).json({ error: "Status invalido para criacao." });
-    }
+    // normalizações
+    const tipo = (data.tipo ?? "corretiva") === "preventiva" ? "preventiva" : "corretiva";
+    const role = (auth?.role || "gestor").toLowerCase();
 
-    // tipo: igual ao seu (padrão corretiva; aceita preventiva)
-    const tipo = String(req.body?.tipo || "corretiva").toLowerCase() === "preventiva"
-      ? "preventiva"
-      : "corretiva";
+    // normaliza status informado, mas ele pode ser sobrescrito adiante
+    let statusNorm = normalizeChamadoStatus(data.status) ?? CHAMADO_STATUS.ABERTO;
 
-    // RBAC igual ao seu
-    const role = user?.role ?? "gestor";
+    // RBAC mínimo: operador não pode criar atribuído nem com status != Aberto
     if (role === "operador") {
       if (statusNorm !== CHAMADO_STATUS.ABERTO) {
         return res.status(403).json({ error: "Operador só pode criar chamados em 'Aberto'." });
       }
-      if (manutentorEmail) {
+      if (data.manutentorEmail) {
         return res.status(403).json({ error: "Operador não pode atribuir manutentor ao criar." });
       }
     }
 
-    // ------------------------------------------------------------------------------------------
-    // 1) se vier de agendamento, carrega dados e checklist base
-    // ------------------------------------------------------------------------------------------
-    let maquinaIdFromAg: string | null = null;
-    let checklistFromAg: any[] = [];
-
-    if (agendamentoId) {
-      const { rows: ags } = await pool.query(
-        `SELECT a.id, a.maquina_id,
-                COALESCE(a.itens_checklist, '[]'::jsonb) AS itens_checklist
-           FROM public.agendamentos_preventivos a
-          WHERE a.id = $1
-          LIMIT 1`,
-        [agendamentoId]
-      );
-      if (!ags.length) {
-        return res.status(400).json({ error: "agendamentoId inválido." });
-      }
-      maquinaIdFromAg = ags[0].maquina_id;
-
-      if (Array.isArray(ags[0].itens_checklist)) {
-        checklistFromAg = ags[0].itens_checklist.map((t: any) => ({
-          item: String(t),
-          resposta: "sim",
-        }));
-      }
-    }
-
-    // ------------------------------------------------------------------------------------------
-    // 2) checklist direto do body (strings) tem prioridade; senão, usa o do agendamento
-    // ------------------------------------------------------------------------------------------
-    let checklistFinal: any[] = [];
-    if (Array.isArray(checklistItems) && checklistItems.length) {
-      checklistFinal = checklistItems.map((t: any) => ({
-        item: String(t),
-        resposta: "sim",
-      }));
-    } else if (checklistFromAg.length) {
-      checklistFinal = checklistFromAg;
-    }
-
-    // ------------------------------------------------------------------------------------------
-    // 3) resolve máquina: por agendamento OU por tag/nome
-    // ------------------------------------------------------------------------------------------
-    if (!maquinaIdFromAg && !maquinaTag && !maquinaNome) {
-      return res.status(400).json({ error: "Informe maquinaTag ou maquinaNome (ou agendamentoId)." });
-    }
-
-    // ids de usuários (criador e, se necessário, manutentor)
+    // id do criador
     const { rows: uCriador } = await pool.query(
-      `SELECT id FROM public.usuarios WHERE LOWER(email) = LOWER($1) LIMIT 1`,
+      `SELECT id FROM public.usuarios WHERE LOWER(email)=LOWER($1) LIMIT 1`,
       [criadorEmail]
     );
-    if (!uCriador.length) {
-      return res.status(400).json({ error: "criadoPorEmail inválido (header)" });
-    }
+    if (!uCriador.length) return res.status(400).json({ error: "criadoPorEmail inválido" });
 
-    let manutentorId: string | null = null;
-    if (statusNorm === CHAMADO_STATUS.EM_ANDAMENTO && manutentorEmail) {
-      const { rows: uMant } = await pool.query(
-        `SELECT id FROM public.usuarios WHERE LOWER(email) = LOWER($1) LIMIT 1`,
-        [manutentorEmail]
+    // resolve máquina: id direto > agendamento > tag/nome
+    let maquinaId: string | null = data.maquinaId ?? null;
+
+    if (!maquinaId && data.agendamentoId) {
+      const { rows: ag } = await pool.query(
+        `SELECT maquina_id FROM public.agendamentos_preventivos WHERE id=$1 LIMIT 1`,
+        [data.agendamentoId]
       );
-      if (!uMant.length) {
-        return res.status(400).json({ error: "manutentorEmail inválido." });
-      }
-      manutentorId = uMant[0].id;
+      if (ag.length) maquinaId = ag[0].maquina_id;
     }
 
-    // máquina via agendamento OU (tag|nome)
-    let maquinaId: string | null = maquinaIdFromAg;
-    if (!maquinaId) {
+    if (!maquinaId && (data.maquinaTag || data.maquinaNome)) {
       const { rows: maq } = await pool.query(
         `SELECT id FROM public.maquinas
-          WHERE ($1::text IS NOT NULL AND tag = $1)
-             OR ($2::text IS NOT NULL AND nome = $2)
-          LIMIT 1`,
-        [maquinaTag ?? null, maquinaNome ?? null]
+           WHERE ($1::text IS NOT NULL AND tag=$1)
+              OR ($2::text IS NOT NULL AND nome=$2)
+           LIMIT 1`,
+        [data.maquinaTag ?? null, data.maquinaNome ?? null]
       );
-      if (!maq.length) {
-        return res.status(400).json({ error: "Máquina não encontrada (tag/nome)." });
-      }
+      if (!maq.length) return res.status(400).json({ error: "Máquina não encontrada" });
       maquinaId = maq[0].id;
     }
 
-    // ------------------------------------------------------------------------------------------
-    // 4) INSERT do chamado (com checklist jsonb). responsável = manutentor se "Em Andamento"
-    // ------------------------------------------------------------------------------------------
+    if (!maquinaId) {
+      return res.status(400).json({ error: "Informe maquinaId, maquinaTag ou maquinaNome." });
+    }
+
+    // checklist jsonb (opcional)
+    let checklistFinal: any[] = [];
+    if (Array.isArray(data.checklistItems) && data.checklistItems.length) {
+      checklistFinal = data.checklistItems.map((t) => ({ item: String(t), resposta: "sim" }));
+    }
+
+    // manutentor (se vier email e o usuário tiver permissão para atribuir)
+    let manutentorId: string | null = null;
+    if (data.manutentorEmail && role !== "operador") {
+      const { rows: uMant } = await pool.query(
+        `SELECT id FROM public.usuarios WHERE LOWER(email)=LOWER($1) LIMIT 1`,
+        [data.manutentorEmail]
+      );
+      if (!uMant.length) return res.status(400).json({ error: "manutentorEmail inválido" });
+      manutentorId = uMant[0].id;
+    }
+
+    // STATUS FINAL:
+    //  - se tem manutentor, força "Em Andamento"
+    //  - senão, usa o normalizado (padrão "Aberto")
+    const statusFinal = manutentorId ? "Em Andamento" : statusNorm;
+
+    // segurança: criamos apenas chamados "ativos"
+    if (!["Aberto", "Em Andamento"].includes(statusFinal)) {
+      return res.status(400).json({ error: "Status inválido para criação." });
+    }
+
+    // INSERT
     const { rows: created } = await pool.query(
       `INSERT INTO public.chamados
          (maquina_id, tipo, status, descricao,
           criado_por_id, manutentor_id, responsavel_atual_id,
           checklist)
-       VALUES ($1, $2, $3, $4,
-               $5, $6, $7,
-               $8::jsonb)
+       VALUES ($1,$2,$3,$4, $5,$6,$7, $8::jsonb)
        RETURNING id`,
       [
         maquinaId,
         tipo,
-        statusNorm,
-        String(descricao).trim(),
+        statusFinal,
+        String(data.descricao).trim(),
         uCriador[0].id,
-        manutentorId,
-        manutentorId,
+        manutentorId,     // null se não atribuído
+        manutentorId,     // null se não atribuído
         JSON.stringify(checklistFinal),
       ]
     );
 
     const chamadoId = created[0].id;
 
-    if (agendamentoId) {
-      await pool.query(
-        `UPDATE public.agendamentos_preventivos
-            SET status = 'iniciado', iniciado_em = NOW()
-          WHERE id = $1`,
-        [agendamentoId]
-      );
-    }
-
-    // retorna no mesmo formato que sua lista já usa
+    // resposta no formato consumido pela UI
     const { rows } = await pool.query(
       `SELECT
          c.id,
@@ -845,9 +791,9 @@ chamadosRouter.post("/chamados", async (req, res) => {
     );
 
     try { sseBroadcast?.({ topic: "chamados", action: "created", id: chamadoId }); } catch {}
-
     return res.status(201).json(rows[0]);
-  } catch (e:any) {
+
+  } catch (e: any) {
     console.error(e);
     return res.status(500).json({ error: String(e) });
   }
@@ -958,4 +904,186 @@ chamadosRouter.patch("/chamados/:id", async (req, res) => {
   }
 });
 
+// -------------------------------------------------------
+// POST /chamados/:id/atribuir  (GESTOR atribui a alguém)
+// body: { manutentorEmail: string }
+// -> Atualiza manutentor_id, responsavel_atual_id, status = 'Em Andamento'
+// -------------------------------------------------------
+chamadosRouter.post(
+  '/chamados/:id/atribuir',
+  requireRole(['gestor', 'admin']),
+  async (req, res) => {
+    try {
+      const chamadoId = String(req.params.id || '').trim();
+      const manutentorEmail = String(req.body?.manutentorEmail || '').trim().toLowerCase();
+      if (!chamadoId) return res.status(400).json({ error: 'ID inválido.' });
+      if (!manutentorEmail) return res.status(400).json({ error: 'Informe manutentorEmail.' });
 
+      // valida manutentor
+      const { rows: um } = await pool.query(
+        `SELECT id FROM public.usuarios WHERE lower(email)=lower($1) LIMIT 1`,
+        [manutentorEmail]
+      );
+      if (!um.length) return res.status(400).json({ error: 'manutentorEmail inválido.' });
+      const manutentorId = um[0].id;
+
+      // pega status atual
+      const { rows: cur } = await pool.query(
+        `SELECT status FROM public.chamados WHERE id=$1 LIMIT 1`,
+        [chamadoId]
+      );
+      if (!cur.length) return res.status(404).json({ error: 'Chamado não encontrado.' });
+      const atual = normalizeChamadoStatus(cur[0].status);
+
+      // se estava "Aberto", ao atribuir vira "Em Andamento"
+      const novoStatus =
+        atual === CHAMADO_STATUS.ABERTO ? CHAMADO_STATUS.EM_ANDAMENTO : atual;
+
+      await pool.query(
+        `UPDATE public.chamados
+            SET manutentor_id = $2,
+                responsavel_atual_id = $2,
+                status = $3,
+                atualizado_em = NOW()
+          WHERE id = $1`,
+        [chamadoId, manutentorId, novoStatus]
+      );
+
+      const { rows } = await pool.query(
+        `SELECT
+           c.id,
+           m.nome AS maquina,
+           c.tipo,
+           c.status,
+           CASE
+             WHEN LOWER(c.status) LIKE 'abert%'       THEN 'aberto'
+             WHEN LOWER(c.status) LIKE 'em andament%' THEN 'em_andamento'
+             WHEN LOWER(c.status) LIKE 'conclu%'      THEN 'concluido'
+             WHEN LOWER(c.status) LIKE 'cancel%'      THEN 'cancelado'
+             ELSE 'aberto'
+           END AS status_key,
+           c.descricao,
+           u.nome  AS criado_por,
+           um.nome AS manutentor,
+           to_char(c.criado_em, 'YYYY-MM-DD HH24:MI') AS criado_em
+         FROM public.chamados c
+         JOIN public.maquinas  m  ON m.id  = c.maquina_id
+         JOIN public.usuarios  u  ON u.id  = c.criado_por_id
+         LEFT JOIN public.usuarios um ON um.id = c.manutentor_id
+         WHERE c.id = $1`,
+        [chamadoId]
+      );
+
+      try { sseBroadcast?.({ topic: 'chamados', action: 'updated', id: chamadoId }); } catch {}
+      return res.json(rows[0]);
+    } catch (e:any) {
+      console.error(e);
+      return res.status(500).json({ error: String(e) });
+    }
+  }
+);
+
+chamadosRouter.delete(
+  '/chamados/:id/atribuir',
+  requireRole(['gestor', 'admin']),
+  async (req, res) => {
+    try {
+      const chamadoId = String(req.params.id || '').trim();
+      if (!chamadoId) return res.status(400).json({ error: 'ID inválido.' });
+
+      await pool.query(
+        `UPDATE public.chamados
+            SET manutentor_id = NULL,
+                responsavel_atual_id = NULL,
+                status = $2,
+                atualizado_em = NOW()
+          WHERE id = $1`,
+        [chamadoId, CHAMADO_STATUS.ABERTO]
+      );
+
+      const { rows } = await pool.query(
+        `SELECT
+           c.id,
+           m.nome AS maquina,
+           c.tipo,
+           c.status,
+           CASE
+             WHEN LOWER(c.status) LIKE 'abert%'       THEN 'aberto'
+             WHEN LOWER(c.status) LIKE 'em andament%' THEN 'em_andamento'
+             WHEN LOWER(c.status) LIKE 'conclu%'      THEN 'concluido'
+             WHEN LOWER(c.status) LIKE 'cancel%'      THEN 'cancelado'
+             ELSE 'aberto'
+           END AS status_key,
+           c.descricao,
+           u.nome  AS criado_por,
+           um.nome AS manutentor,
+           to_char(c.criado_em, 'YYYY-MM-DD HH24:MI') AS criado_em
+         FROM public.chamados c
+         JOIN public.maquinas  m  ON m.id  = c.maquina_id
+         JOIN public.usuarios  u  ON u.id  = c.criado_por_id
+         LEFT JOIN public.usuarios um ON um.id = c.manutentor_id
+         WHERE c.id = $1`,
+        [chamadoId]
+      );
+
+      try { sseBroadcast?.({ topic: 'chamados', action: 'updated', id: chamadoId }); } catch {}
+      return res.json(rows[0]);
+    } catch (e:any) {
+      console.error(e);
+      return res.status(500).json({ error: String(e) });
+    }
+  }
+);
+
+chamadosRouter.post(
+  '/chamados/:id/atender',
+  requireRole(['manutentor', 'gestor', 'admin']),
+  async (req, res) => {
+    try {
+      const chamadoId = String(req.params.id || '').trim();
+      const me = (req as any).user;
+      if (!me?.id) return res.status(401).json({ error: 'USUARIO_NAO_CADASTRADO' });
+
+      await pool.query(
+        `UPDATE public.chamados
+            SET manutentor_id = $2,
+                responsavel_atual_id = $2,
+                status = $3,
+                atualizado_em = NOW()
+          WHERE id = $1`,
+        [chamadoId, me.id, CHAMADO_STATUS.EM_ANDAMENTO]
+      );
+
+      const { rows } = await pool.query(
+        `SELECT
+           c.id,
+           m.nome AS maquina,
+           c.tipo,
+           c.status,
+           CASE
+             WHEN LOWER(c.status) LIKE 'abert%'       THEN 'aberto'
+             WHEN LOWER(c.status) LIKE 'em andament%' THEN 'em_andamento'
+             WHEN LOWER(c.status) LIKE 'conclu%'      THEN 'concluido'
+             WHEN LOWER(c.status) LIKE 'cancel%'      THEN 'cancelado'
+             ELSE 'aberto'
+           END AS status_key,
+           c.descricao,
+           u.nome  AS criado_por,
+           um.nome AS manutentor,
+           to_char(c.criado_em, 'YYYY-MM-DD HH24:MI') AS criado_em
+         FROM public.chamados c
+         JOIN public.maquinas  m  ON m.id  = c.maquina_id
+         JOIN public.usuarios  u  ON u.id  = c.criado_por_id
+         LEFT JOIN public.usuarios um ON um.id = c.manutentor_id
+         WHERE c.id = $1`,
+        [chamadoId]
+      );
+
+      try { sseBroadcast?.({ topic: 'chamados', action: 'updated', id: chamadoId }); } catch {}
+      return res.json(rows[0]);
+    } catch (e:any) {
+      console.error(e);
+      return res.status(500).json({ error: String(e) });
+    }
+  }
+);
