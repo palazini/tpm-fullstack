@@ -38,3 +38,7 @@ Thumbs.db
 
 # NPM auth (pode conter token)
 .npmrc
+
+scripts/
+restore_chamados_from_firestore.js
+restore_from_firestore.js
