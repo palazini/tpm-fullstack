@@ -258,7 +258,9 @@
     "maintainer": "Manutentore",
     "logout": "Disconnetti",
     "error": "Si è verificato un errore.",
-    "machine": "Macchina"
+    "machine": "Macchina",
+    "loadError": "Errore durante il caricamento dei dati.",
+    "back": "Indietro"
   },
   "chamadoDetalhe": {
     "notFound": "Ordine non trovato.",
@@ -622,7 +624,8 @@
     "confirmBtn": "Conferma e avvia checklist",
     "alert": {
       "selectOne": "Seleziona almeno una macchina."
-    }
+    },
+    "sentToday": "✓ inviato oggi"
   },
   "tarefasDiarias": {
     "title": "Attività giornaliere",
@@ -645,7 +648,10 @@
     "send": "Invia checklist",
     "sending": "Invio in corso...",
     "toastSent": "Checklist inviata! {{count}} ordine/i generato/i.",
-    "toastFail": "Impossibile inviare la checklist."
+    "toastFail": "Impossibile inviare la checklist.",
+    "allDone": "Checklist completate!",
+    "sendAndNext": "Invia e avanti",
+    "finishAll": "Invia e termina"
   },
   "operatorDashboard": {
     "form": {

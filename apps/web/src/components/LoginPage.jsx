@@ -36,15 +36,17 @@ export default function LoginPage() {
   const [senha, setSenha] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // para suportar /login?redirect=/alguma-rota
+  // /login?redirect=/alguma-rota (para perfis != operador)
   const search = new URLSearchParams(location.search);
-  const redirectTo = search.get('redirect') || '/maquinas';
+  const redirectTo = search.get('redirect') || '/';
 
   // se já tem sessão no storage, pula login
   useEffect(() => {
     const u = readStoredUser();
     if (u?.email) {
-      navigate(redirectTo, { replace: true });
+      const isOperador = (u.role || '').toLowerCase() === 'operador';
+      const next = isOperador ? '/inicio-turno' : redirectTo;
+      navigate(next, { replace: true });
     }
   }, [navigate, redirectTo]);
 
@@ -69,13 +71,22 @@ export default function LoginPage() {
         role: String(user?.role || '').trim().toLowerCase(),
       };
 
-      // salva no storage can?nico e limpa chaves legadas
+      // salva no storage canônico e limpa chaves legadas
       persistUser(normalized);
 
-      // navega para a área logada
-      navigate(redirectTo, { replace: true });
-      // Se alguma parte do app só lê storage no mount, descomente:
-      // setTimeout(() => window.location.reload(), 0);
+      // força re-hidratação no mesmo tab (App escuta 'storage')
+      try {
+        window.dispatchEvent(new StorageEvent('storage', { key: 'usuario' }));
+      } catch {}
+
+      // pós-login: operador sempre vai para /inicio-turno;
+      // se NÃO for operador, respeita ?redirect= se houver, senão vai para /
+      const isOperador = (normalized.role || '').toLowerCase() === 'operador';
+      const next = isOperador ? '/inicio-turno' : redirectTo;
+
+      navigate(next, { replace: true });
+      // (opcional) se seu App não reidratar, você pode forçar:
+      // setTimeout(() => window.location.replace(next), 0);
     } catch (err) {
       console.error('Erro no login:', err);
       toast.error(t('login.invalid'));

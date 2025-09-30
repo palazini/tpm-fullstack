@@ -258,7 +258,9 @@
     "maintainer": "Maintainer",
     "logout": "Logout",
     "error": "An error occurred.",
-    "machine": "Machine"
+    "machine": "Machine",
+    "loadError": "Failed to load data.",
+    "back": "Back"
   },
   "chamadoDetalhe": {
     "notFound": "Work order not found.",
@@ -622,7 +624,8 @@
     "confirmBtn": "Confirm and Start Checklists",
     "alert": {
       "selectOne": "Please select at least one machine."
-    }
+    },
+    "sentToday": "✓ sent today"
   },
   "tarefasDiarias": {
     "title": "Daily Tasks",
@@ -645,7 +648,10 @@
     "send": "Submit Checklist",
     "sending": "Submitting...",
     "toastSent": "Checklist submitted! {{count}} work order(s) generated.",
-    "toastFail": "Unable to submit checklist."
+    "toastFail": "Unable to submit checklist.",
+    "allDone": "Checklists completed!",
+    "sendAndNext": "Send and Next",
+    "finishAll": "Send and Finish"
   },
   "operatorDashboard": {
     "form": {

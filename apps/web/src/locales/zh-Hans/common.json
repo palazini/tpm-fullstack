@@ -258,7 +258,9 @@
     "maintainer": "维护员",
     "logout": "退出登录",
     "error": "发生错误。",
-    "machine": "机器"
+    "machine": "机器",
+    "loadError": "加载数据失败。",
+    "back": "返回"
   },
   "chamadoDetalhe": {
     "notFound": "未找到工单。",
@@ -622,7 +624,8 @@
     "confirmBtn": "确认并开始检查表",
     "alert": {
       "selectOne": "请至少选择一台机器。"
-    }
+    },
+    "sentToday": "✓ 今日已发送"
   },
   "tarefasDiarias": {
     "title": "每日任务",
@@ -645,7 +648,10 @@
     "send": "提交检查表",
     "sending": "正在提交...",
     "toastSent": "检查表已提交！已生成 {{count}} 个工单。",
-    "toastFail": "无法提交检查表。"
+    "toastFail": "无法提交检查表。",
+    "allDone": "检查清单已完成！",
+    "sendAndNext": "提交并下一个",
+    "finishAll": "提交并完成"
   },
   "operatorDashboard": {
     "form": {

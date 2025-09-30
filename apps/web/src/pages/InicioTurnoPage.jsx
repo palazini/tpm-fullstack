@@ -1,186 +1,322 @@
 // src/pages/InicioTurnoPage.jsx
-import React, { useEffect, useState } from 'react';
-import styles from './InicioTurnoPage.module.css';
-import { useTranslation } from 'react-i18next';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import styles from './InicioTurnoPage.module.css';
+import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 
-// API sem Firebase
-import { listarMaquinas } from '../services/apiClient';
+// API já existentes
+import {
+  listarMaquinas,
+  listarSubmissoesDiarias,
+  enviarChecklistDiaria,
+  getMaquina, // usa checklist_diario / checklistDiario da máquina
+} from '../services/apiClient';
 
 function hojeISO() {
-  return new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+  return new Date().toISOString().slice(0, 10);
+}
+function normalizeChecklist(raw) {
+  if (Array.isArray(raw)) return raw;
+  if (raw && typeof raw === 'object' && Array.isArray(raw.items)) return raw.items;
+  if (typeof raw === 'string') {
+    try { const p = JSON.parse(raw); return Array.isArray(p) ? p : []; } catch { return []; }
+  }
+  return [];
 }
 
-const InicioTurnoPage = ({ user, onTurnoConfirmado }) => {
+export default function InicioTurnoPage({ user }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
 
+  const operadorEmail = useMemo(
+    () => String(user?.email || '').toLowerCase(),
+    [user?.email]
+  );
+  const operadorNome = user?.nome || '';
+
+  // PASSO 1 - seleção
   const [todasMaquinas, setTodasMaquinas] = useState([]);
+  const [turno, setTurno] = useState('turno1');
+  const [selecionadas, setSelecionadas] = useState([]);
+  const [enviadasHoje, setEnviadasHoje] = useState(new Set());
   const [loading, setLoading] = useState(true);
 
-  // seleção do operador
-  const [turnoSelecionado, setTurnoSelecionado] = useState('turno1');
-  const [maquinasSelecionadas, setMaquinasSelecionadas] = useState([]);
+  // PASSO 2 - checklists (wizard)
+  const [modo, setModo] = useState('selecionar'); // 'selecionar' | 'checklist'
+  const [idx, setIdx] = useState(0);              // índice da máquina atual
+  const [maquinaAtual, setMaquinaAtual] = useState(null);
+  const [perguntas, setPerguntas] = useState([]);
+  const [respostas, setRespostas] = useState({}); // { pergunta: 'sim'|'nao' }
+  const [salvando, setSalvando] = useState(false);
 
-  // carrega máquinas pela nossa API e pré-carrega seleção do dia
+  // Carrega máquinas e já marca “enviada hoje” (do backend)
   useEffect(() => {
     let alive = true;
     (async () => {
       try {
         setLoading(true);
-
-        const lista = await listarMaquinas(); // retorna [{id, nome, ...}]
-        if (!alive) return;
-
-        // ordena por nome (caso a API não ordene)
-        const ordenada = [...lista].sort((a, b) =>
-          String(a.nome || '').localeCompare(String(b.nome || ''), 'pt')
+        const lista = await listarMaquinas(); // [{id,nome,...}]
+        const ordenada = [...lista].sort((a,b) =>
+          String(a.nome||'').localeCompare(String(b.nome||''), 'pt')
         );
+        if (!alive) return;
         setTodasMaquinas(ordenada);
 
-        // pré-carrega seleção do localStorage se for o mesmo dia e mesmo operador
-        const raw = localStorage.getItem('dadosTurno');
-        if (raw) {
-          try {
-            const st = JSON.parse(raw);
-            if (
-              st?.dataISO === hojeISO() &&
-              st?.operadorEmail?.toLowerCase() === String(user?.email || '').toLowerCase()
-            ) {
-              setTurnoSelecionado(st.turno || 'turno1');
-              // filtra IDs que ainda existem na lista atual de máquinas
-              const validIds = new Set(ordenada.map(m => m.id));
-              const selecionadas = (st.maquinasSelecionadas || []).filter(id => validIds.has(id));
-              setMaquinasSelecionadas(selecionadas);
-            }
-          } catch {}
+        // quem eu já enviei hoje (do backend)
+        if (operadorEmail) {
+          const resp = await listarSubmissoesDiarias({ operadorEmail, date: hojeISO() });
+          const items = Array.isArray(resp) ? resp : (Array.isArray(resp?.items) ? resp.items : []);
+          const ids = new Set(
+            items
+              .map(r => r?.maquinaId ?? r?.maquina_id ?? r?.maquina?.id ?? null)
+              .filter(Boolean)
+              .map(String)
+          );
+          if (!alive) return;
+          setEnviadasHoje(ids);
         }
       } catch (e) {
-        console.error('Falha ao carregar máquinas:', e);
+        console.error(e);
+        toast.error(t('common.loadError', 'Falha ao carregar dados.'));
       } finally {
         if (alive) setLoading(false);
       }
     })();
     return () => { alive = false; };
-  }, [user?.email]);
+  }, [operadorEmail, t]);
 
-  const handleSelecaoMaquina = (maquinaId) => {
-    setMaquinasSelecionadas(prev =>
-      prev.includes(maquinaId)
-        ? prev.filter(id => id !== maquinaId)
-        : [...prev, maquinaId]
+  // Selecionar / deselecionar
+  const toggleMaquina = (id) => {
+    setSelecionadas(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
     );
   };
 
-  const handleConfirmarTurno = () => {
-    if (!maquinasSelecionadas.length) {
-      alert(t('inicioTurno.alert.selectOne'));
+  // Avança para o passo de checklists
+  const iniciarChecklists = async () => {
+    if (selecionadas.length === 0) {
+      toast.error(t('inicioTurno.alert.selectOne', 'Selecione ao menos 1 máquina.'));
       return;
     }
-
-    const dataISO = hojeISO();
-    const operadorEmail = String(user?.email || '').toLowerCase();
-
-    // Lê estado anterior e mescla (evita “pular” checklist quando o operador adiciona máquinas depois)
-    let anteriores = [];
-    const raw = localStorage.getItem('dadosTurno');
-    if (raw) {
-      try {
-        const st = JSON.parse(raw);
-        if (st?.dataISO === dataISO && st?.operadorEmail?.toLowerCase() === operadorEmail) {
-          anteriores = Array.isArray(st.maquinasSelecionadas) ? st.maquinasSelecionadas : [];
-        }
-      } catch {}
-    }
-
-    // União (sem duplicar)
-    const merged = Array.from(new Set([...anteriores, ...maquinasSelecionadas]));
-
-    const novoEstado = {
-      dataISO,
-      operadorEmail,
-      turno: turnoSelecionado,
-      maquinasSelecionadas: merged,
-      ultimaMaquina: null, // será preenchida ao iniciar a primeira checklist
-    };
-    localStorage.setItem('dadosTurno', JSON.stringify(novoEstado));
-
-    // devolve ao fluxo (OperatorFlow) a lista unida
-    onTurnoConfirmado?.({
-      turno: turnoSelecionado,
-      maquinas: merged,
-    });
+    setIdx(0);
+    setModo('checklist');
   };
 
-  // Botão de escape (logout)
-  const handleLogout = () => {
+  // Carrega perguntas da máquina atual quando entramos no modo checklist ou trocamos idx
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      if (modo !== 'checklist') return;
+      const id = selecionadas[idx];
+      if (!id) return;
+
+      try {
+        setMaquinaAtual(null);
+        setPerguntas([]);
+        setRespostas({});
+        const m = await getMaquina(id); // { id, nome, checklist_diario? }
+        if (!alive) return;
+
+        setMaquinaAtual(m);
+        const raw = m.checklist_diario ?? m.checklistDiario ?? [];
+        const lista = normalizeChecklist(raw);
+        const iniciais = {};
+        lista.forEach(item => { iniciais[item] = 'sim'; });
+        setPerguntas(lista);
+        setRespostas(iniciais);
+      } catch (e) {
+        console.error(e);
+        toast.error(t('checklist.toastFail', 'Falha ao carregar checklist.'));
+      }
+    })();
+    return () => { alive = false; };
+  }, [modo, idx, selecionadas, t]);
+
+  const handleResp = (pergunta, valor) => {
+    setRespostas(prev => ({ ...prev, [pergunta]: valor }));
+  };
+
+  const enviarChecklistAtual = async () => {
+    if (!maquinaAtual || salvando) return;
+    setSalvando(true);
     try {
-      localStorage.removeItem('usuario');
-      localStorage.removeItem('dadosTurno');
-    } catch {}
+      await enviarChecklistDiaria({
+        operadorEmail,
+        operadorNome,
+        maquinaId: maquinaAtual.id,
+        maquinaNome: maquinaAtual.nome || '',
+        date: hojeISO(),
+        respostas,
+        turno,
+      });
+
+      // marca como enviada hoje
+      setEnviadasHoje(prev => new Set([...prev, String(maquinaAtual.id)]));
+
+      // próxima máquina ou fim
+      if (idx + 1 < selecionadas.length) {
+        setIdx(idx + 1);
+      } else {
+        toast.success(t('checklist.allDone', 'Checklists concluídas!'));
+        navigate('/', { replace: true }); // vai para a home do operador (MainLayout)
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error(t('checklist.toastFail', 'Falha ao enviar checklist.'));
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  // Sair (limpa sessão)
+  const handleLogout = () => {
+    try { localStorage.removeItem('usuario'); } catch {}
     navigate('/login', { replace: true });
   };
 
+  // ------------- RENDER -------------
+  if (loading) return <div className={styles.pageContainer}><p>Carregando…</p></div>;
+
+  if (modo === 'selecionar') {
+    return (
+      <div className={styles.pageContainer}>
+        <div className={styles.card}>
+          <div className={styles.header}>
+            <div className={styles.headerTitle}>
+              <h1>{t('inicioTurno.title', 'Início de turno')}</h1>
+              <p>{t('inicioTurno.greeting', { name: operadorNome })}</p>
+            </div>
+            <button className={styles.escapeButton} onClick={handleLogout}>
+              {t('common.logout', 'Sair')}
+            </button>
+          </div>
+
+          <div className={styles.formGroup}>
+            <label htmlFor="turno">{t('inicioTurno.fields.shift', 'Turno')}</label>
+            <select
+              id="turno"
+              className={styles.select}
+              value={turno}
+              onChange={(e) => setTurno(e.target.value)}
+            >
+              <option value="turno1">{t('inicioTurno.shifts.shift1', 'Turno 1')}</option>
+              <option value="turno2">{t('inicioTurno.shifts.shift2', 'Turno 2')}</option>
+            </select>
+          </div>
+
+          <div className={styles.formGroup}>
+            <label>{t('inicioTurno.fields.machinesLabel', 'Máquinas do seu turno')}</label>
+            <div className={styles.machineList}>
+              {todasMaquinas.map(m => {
+                const jaEnviou = enviadasHoje.has(String(m.id));
+                return (
+                  <div key={m.id} className={styles.machineCheckbox}>
+                    <input
+                      type="checkbox"
+                      id={`m-${m.id}`}
+                      checked={selecionadas.includes(m.id)}
+                      onChange={() => toggleMaquina(m.id)}
+                    />
+                    <label htmlFor={`m-${m.id}`}>
+                      {m.nome}
+                      {jaEnviou && (
+                        <span className={styles.badgeEnviada}>
+                          {t('inicioTurno.sentToday', '✓ enviada hoje')}
+                        </span>
+                      )}
+                    </label>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className={styles.actionsRow}>
+            <button className={styles.button} onClick={iniciarChecklists}>
+              {t('inicioTurno.confirmBtn', 'Confirmar e iniciar checklists')}
+            </button>
+            <button
+              className={styles.buttonSecondary}
+              onClick={() => navigate('/', { replace:true })}
+            >
+              {t('common.cancel', 'Cancelar')}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // modo === 'checklist'
   return (
     <div className={styles.pageContainer}>
       <div className={styles.card}>
         <div className={styles.header}>
-          <h1>{t('inicioTurno.title')}</h1>
-          <p>{t('inicioTurno.greeting', { name: user?.nome || '' })}</p>
-
-          {/* Botão Sair / escape */}
-          <button
-            type="button"
-            className={styles.escapeButton}
-            onClick={handleLogout}
-            title={t('common.logout', 'Sair')}
-          >
+          <div className={styles.headerTitle}>
+            <h1>
+              {t('checklist.title', { machine: maquinaAtual?.nome || '' })}{' '}
+              <small>({idx + 1}/{selecionadas.length})</small>
+            </h1>
+            <p>{t('checklist.greeting', { name: operadorNome })}</p>
+          </div>
+          <button className={styles.escapeButton} onClick={handleLogout}>
             {t('common.logout', 'Sair')}
           </button>
         </div>
 
-        {loading ? (
-          <p>{t('inicioTurno.loading')}</p>
-        ) : (
-          <div>
-            <div className={styles.formGroup}>
-              <label htmlFor="turno">{t('inicioTurno.fields.shift')}</label>
-              <select
-                id="turno"
-                className={styles.select}
-                value={turnoSelecionado}
-                onChange={(e) => setTurnoSelecionado(e.target.value)}
-              >
-                <option value="turno1">{t('inicioTurno.shifts.shift1')}</option>
-                <option value="turno2">{t('inicioTurno.shifts.shift2')}</option>
-              </select>
-            </div>
-
-            <div className={styles.formGroup}>
-              <label>{t('inicioTurno.fields.machinesLabel')}</label>
-              <div className={styles.machineList}>
-                {todasMaquinas.map(maquina => (
-                  <div key={maquina.id} className={styles.machineCheckbox}>
-                    <input
-                      type="checkbox"
-                      id={maquina.id}
-                      checked={maquinasSelecionadas.includes(maquina.id)}
-                      onChange={() => handleSelecaoMaquina(maquina.id)}
-                    />
-                    <label htmlFor={maquina.id}>{maquina.nome}</label>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <button onClick={handleConfirmarTurno} className={styles.button}>
-              {t('inicioTurno.confirmBtn')}
-            </button>
-          </div>
+        {perguntas.length === 0 && (
+          <p>{t('checklist.empty', 'Não há itens configurados para esta máquina.')}</p>
         )}
+
+        {perguntas.map((pergunta, i) => (
+          <div key={i} className={styles.checklistItem}>
+            <span>{pergunta}</span>
+            <div className={styles.optionGroup}>
+              <input
+                type="radio"
+                id={`sim-${i}`}
+                name={`item-${i}`}
+                checked={respostas[pergunta] === 'sim'}
+                onChange={() => handleResp(pergunta, 'sim')}
+              />
+              <label htmlFor={`sim-${i}`}>{t('checklist.yes', 'Sim')}</label>
+
+              <input
+                type="radio"
+                id={`nao-${i}`}
+                name={`item-${i}`}
+                checked={respostas[pergunta] === 'nao'}
+                onChange={() => handleResp(pergunta, 'nao')}
+              />
+              <label htmlFor={`nao-${i}`}>{t('checklist.no', 'Não')}</label>
+            </div>
+          </div>
+        ))}
+
+        <div className={styles.actionsRow}>
+          <button
+            className={styles.buttonSecondary}
+            disabled={idx === 0 || salvando}
+            onClick={() => setIdx(Math.max(0, idx - 1))}
+          >
+            {t('common.back', 'Voltar')}
+          </button>
+
+          <button
+            className={styles.submitButton}
+            disabled={salvando}
+            onClick={enviarChecklistAtual}
+            title={t('checklist.send', 'Enviar')}
+          >
+            {salvando ? t('checklist.sending', 'Enviando…') :
+              (idx + 1 < selecionadas.length
+                ? t('checklist.sendAndNext', 'Enviar e próxima')
+                : t('checklist.finishAll', 'Enviar e finalizar'))
+            }
+          </button>
+        </div>
       </div>
     </div>
   );
-};
-
-export default InicioTurnoPage;
+}

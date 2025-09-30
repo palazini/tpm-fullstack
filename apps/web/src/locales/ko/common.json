@@ -258,7 +258,9 @@
     "maintainer": "유지보수원",
     "logout": "로그아웃",
     "error": "오류가 발생했습니다.",
-    "machine": "기계"
+    "machine": "기계",
+    "loadError": "데이터를 불러오는 데 실패했습니다.",
+    "back": "뒤로"
   },
   "chamadoDetalhe": {
     "notFound": "요청을 찾을 수 없습니다.",
@@ -622,7 +624,8 @@
     "confirmBtn": "확인하고 체크리스트 시작",
     "alert": {
       "selectOne": "최소 한 대의 기계를 선택하세요."
-    }
+    },
+    "sentToday": "✓ 오늘 보냄"
   },
   "tarefasDiarias": {
     "title": "일일 작업",
@@ -645,7 +648,11 @@
     "send": "체크리스트 제출",
     "sending": "제출 중...",
     "toastSent": "체크리스트가 제출되었습니다! {{count}}개의 요청이 생성되었습니다.",
-    "toastFail": "체크리스트를 제출할 수 없습니다."
+    "toastFail": "체크리스트를 제출할 수 없습니다.",
+    "allDone": "체크리스트 완료!",
+    "sendAndNext": "전송 후 다음",
+    "finishAll": "전송하고 완료"
+
   },
   "operatorDashboard": {
     "form": {

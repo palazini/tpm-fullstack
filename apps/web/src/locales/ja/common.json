@@ -258,7 +258,9 @@
     "maintainer": "保守員",
     "logout": "ログアウト",
     "error": "エラーが発生しました。",
-    "machine": "機械"
+    "machine": "機械",
+    "loadError": "データの読み込みに失敗しました。",
+    "back": "戻る"
   },
   "chamadoDetalhe": {
     "notFound": "依頼が見つかりません。",
@@ -622,7 +624,8 @@
     "confirmBtn": "確認してチェックリスト開始",
     "alert": {
       "selectOne": "少なくとも1台の機械を選択してください。"
-    }
+    },
+    "sentToday": "✓ 本日送信済み"
   },
   "tarefasDiarias": {
     "title": "日次タスク",
@@ -645,7 +648,10 @@
     "send": "チェックリストを送信",
     "sending": "送信中...",
     "toastSent": "チェックリストを送信しました！{{count}} 件の依頼を生成しました。",
-    "toastFail": "チェックリストを送信できませんでした。"
+    "toastFail": "チェックリストを送信できませんでした。",
+    "allDone": "すべてのチェックリストが完了しました！",
+    "sendAndNext": "送信して次へ",
+    "finishAll": "送信して完了"
   },
   "operatorDashboard": {
     "form": {

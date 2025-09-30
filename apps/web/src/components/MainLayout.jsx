@@ -1,5 +1,5 @@
 // src/components/MainLayout.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Routes, Route, NavLink, Link, useNavigate } from 'react-router-dom';
 import {
   FiHome, FiLogOut, FiCheckSquare, FiUser, FiCalendar, FiUsers,
@@ -15,7 +15,7 @@ import ChamadoDetalhe from '../pages/ChamadoDetalhe.jsx';
 import HistoricoPage from '../pages/HistoricoPage.jsx';
 import PerfilPage from '../pages/PerfilPage.jsx';
 import MaquinasLayout from '../pages/MaquinasLayout.jsx';
-import HistoricoLayout from "../pages/HistoricoLayout.jsx";
+import HistoricoLayout from '../pages/HistoricoLayout.jsx';
 import AnaliseFalhasPage from '../pages/AnaliseFalhasPage.jsx';
 import GerirUtilizadoresPage from '../pages/GerirUtilizadoresPage.jsx';
 import CalendarioGeralPage from '../pages/CalendarioGeralPage.jsx';
@@ -34,7 +34,7 @@ import { listarChamados, listarAgendamentos, connectSSE } from '../services/apiC
 const MainLayout = ({ user }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const role = (user?.role || '').trim().toLowerCase();
+  const role = useMemo(() => (user?.role || '').trim().toLowerCase(), [user?.role]);
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [hasOpenCalls, setHasOpenCalls] = useState(false);
@@ -48,9 +48,7 @@ const MainLayout = ({ user }) => {
       const a = await listarChamados({ status: 'Aberto', pageSize: 1 });
       const e = await listarChamados({ status: 'Em Andamento', pageSize: 1 });
       setHasOpenCalls(((a?.total || 0) + (e?.total || 0)) > 0);
-    } catch {
-      // silencioso
-    }
+    } catch {}
   };
 
   const refreshSoonDue = async () => {
@@ -63,9 +61,7 @@ const MainLayout = ({ user }) => {
         a.status === 'agendado' && new Date(a.start_ts) <= to
       ).length;
       setHasSoonDue(qtd > 0);
-    } catch {
-      // silencioso
-    }
+    } catch {}
   };
 
   const refreshMyActive = async () => {
@@ -74,27 +70,21 @@ const MainLayout = ({ user }) => {
       const a = await listarChamados({ status: 'Aberto',       manutentorEmail: user.email, pageSize: 1 });
       const e = await listarChamados({ status: 'Em Andamento', manutentorEmail: user.email, pageSize: 1 });
       setMyActiveCount((a?.total || 0) + (e?.total || 0));
-    } catch {
-      // silencioso
-    }
+    } catch {}
   };
 
   // Conexão SSE + primeira carga dos badges
   useEffect(() => {
     let stopped = false;
 
-    // carga inicial
     refreshOpenCalls();
     refreshSoonDue();
     refreshMyActive();
 
-    // eventos em tempo real
     const disconnect = connectSSE({
       chamados: () => { if (!stopped) { refreshOpenCalls(); refreshMyActive(); } },
       agendamentos: () => { if (!stopped) refreshSoonDue(); },
-      // checklist/pecas não impactam badges do layout; podemos ouvir em cada página específica
     });
-
     return () => { stopped = true; disconnect(); };
   }, [role, user?.email]);
 
@@ -103,6 +93,8 @@ const MainLayout = ({ user }) => {
       localStorage.removeItem('usuario');
       localStorage.removeItem('dadosTurno');
     } catch {}
+    // avisa o App imediatamente (mesma aba)
+    window.dispatchEvent(new Event('auth-user-changed'));
     navigate('/login', { replace: true });
   };
 
@@ -119,6 +111,17 @@ const MainLayout = ({ user }) => {
         <FiHome className={styles.navIcon} />
         <span>{t('nav.home')}</span>
       </NavLink>
+
+      {/* Atalho para o wizard do operador */}
+      {role === 'operador' && (
+        <NavLink
+          to="/inicio-turno"
+          className={({ isActive }) => isActive ? `${styles.navLink} ${styles.activeLink}` : styles.navLink}
+        >
+          <FiCheckSquare className={styles.navIcon} />
+          <span>{t('nav.startShift', 'Início de turno')}</span>
+        </NavLink>
+      )}
 
       <NavLink to="/perfil" className={({ isActive }) => isActive ? `${styles.navLink} ${styles.activeLink}` : styles.navLink}>
         <FiUser className={styles.navIcon} />
@@ -167,10 +170,7 @@ const MainLayout = ({ user }) => {
       {role === 'manutentor' && (
         <NavLink
           to="/abrir-chamado"
-          className={({ isActive }) => {
-            const base = styles.navLink;
-            return isActive ? `${base} ${styles.activeLink}` : base;
-          }}
+          className={({ isActive }) => isActive ? `${styles.navLink} ${styles.activeLink}` : styles.navLink}
         >
           <FiPlusCircle className={styles.navIcon} />
           <span>{t('nav.openCorrective')}</span>
@@ -201,7 +201,7 @@ const MainLayout = ({ user }) => {
 
       {(role === 'manutentor' || role === 'gestor') && (
         <NavLink to="/estoque" className={({ isActive }) => isActive ? `${styles.navLink} ${styles.activeLink}` : styles.navLink}>
-          <FiPackage  className={styles.navIcon} />
+          <FiPackage className={styles.navIcon} />
           <span>{t('nav.inventory')}</span>
         </NavLink>
       )}
@@ -216,11 +216,7 @@ const MainLayout = ({ user }) => {
 
           <NavLink
             to="/causas-raiz"
-            className={({ isActive }) =>
-              isActive
-                ? `${styles.navLink} ${styles.activeLink}`
-                : styles.navLink
-            }
+            className={({ isActive }) => isActive ? `${styles.navLink} ${styles.activeLink}` : styles.navLink}
           >
             <FiPieChart className={styles.navIcon} />
             <span>{t('nav.rootCauses')}</span>
@@ -257,7 +253,7 @@ const MainLayout = ({ user }) => {
       </aside>
 
       {/* OVERLAY MOBILE */}
-      {isMobileMenuOpen && <div className={styles.overlay} onClick={() => setIsMobileMenuOpen(false)}></div>}
+      {isMobileMenuOpen && <div className={styles.overlay} onClick={() => setIsMobileMenuOpen(false)} />}
 
       {/* SIDEBAR MOBILE */}
       <aside className={`${styles.mobileNav} ${isMobileMenuOpen ? styles.open : ''}`}>
@@ -290,11 +286,7 @@ const MainLayout = ({ user }) => {
         <Routes>
           <Route
             path="/"
-            element={role === 'operador' ? (
-              <OperatorDashboard user={user} />
-            ) : (
-              <InicioPage user={user} />
-            )}
+            element={role === 'operador' ? <OperatorDashboard user={user} /> : <InicioPage user={user} />}
           />
 
           <Route path="/maquinas/*" element={<MaquinasLayout />}>

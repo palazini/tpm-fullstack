@@ -258,7 +258,9 @@
     "maintainer": "Instandhalter",
     "logout": "Abmelden",
     "error": "Es ist ein Fehler aufgetreten.",
-    "machine": "Maschine"
+    "machine": "Maschine",
+    "loadError": "Fehler beim Laden der Daten.",
+    "back": "Zurück"
   },
   "chamadoDetalhe": {
     "notFound": "Arbeitsauftrag nicht gefunden.",
@@ -622,7 +624,8 @@
     "confirmBtn": "Bestätigen und Checklisten starten",
     "alert": {
       "selectOne": "Bitte mindestens eine Maschine auswählen."
-    }
+    },
+    "sentToday": "✓ heute gesendet"
   },
   "tarefasDiarias": {
     "title": "Tägliche Aufgaben",
@@ -645,7 +648,10 @@
     "send": "Checkliste absenden",
     "sending": "Wird gesendet...",
     "toastSent": "Checkliste gesendet! {{count}} Arbeitsauftrag/Arbeitsaufträge erzeugt.",
-    "toastFail": "Checkliste konnte nicht gesendet werden."
+    "toastFail": "Checkliste konnte nicht gesendet werden.",
+    "allDone": "Checklisten abgeschlossen!",
+    "sendAndNext": "Senden & Weiter",
+    "finishAll": "Senden & Abschließen"
   },
   "operatorDashboard": {
     "form": {

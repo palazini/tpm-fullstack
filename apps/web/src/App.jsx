@@ -1,6 +1,5 @@
 // src/App.jsx
-
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { DndProvider } from 'react-dnd';
@@ -8,103 +7,61 @@ import { HTML5Backend } from 'react-dnd-html5-backend';
 
 import LoginPage from './components/LoginPage.jsx';
 import MainLayout from './components/MainLayout.jsx';
-import OperatorFlow from './pages/OperatorFlow.jsx'; // 1. Importar nosso novo componente
-import ChecklistPage from './pages/ChecklistPage.jsx';
 import InicioTurnoPage from './pages/InicioTurnoPage.jsx';
 
-function App() {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [turnoConfirmado, setTurnoConfirmado] = useState(false);
-  const [dadosTurno, setDadosTurno] = useState(null);
+const AUTH_EVENT = 'auth-user-changed';
+
+function readStoredUser() {
+  try { return JSON.parse(localStorage.getItem('usuario') || 'null'); }
+  catch { return null; }
+}
+
+export default function App() {
+  const [user, setUser] = useState(() => readStoredUser());
   const location = useLocation();
-  const userRole = (user?.role || '').trim().toLowerCase();
 
-  const readStoredUser = () => {
-    try {
-      const raw = localStorage.getItem('usuario');
-      return raw ? JSON.parse(raw) : null;
-    } catch {
-      return null;
-    }
-  };
-  const readDadosTurno = () => {
-    try { return JSON.parse(localStorage.getItem('dadosTurno') || 'null'); }
-    catch { return null; }
-  };
-
-  // Mount: carrega usuário e dados do turno
+  // 🔁 Recarrega o user a cada mudança de rota (inclui pós-login via navigate)
   useEffect(() => {
-    const u = readStoredUser();
-    setUser(u);
-    const dt = readDadosTurno();
-    setDadosTurno(dt);
-    setTurnoConfirmado(!!dt && Array.isArray(dt.maquinas) && dt.maquinas.length > 0);
-    setLoading(false);
-  }, []);
-
-  // A cada mudança de rota, re-hidrata (útil após login navegado ou sair do fluxo)
-  useEffect(() => {
-    const u = readStoredUser();
-    setUser(u);
-    const dt = readDadosTurno();
-    setDadosTurno(dt);
-    setTurnoConfirmado(!!dt && Array.isArray(dt.maquinas) && dt.maquinas.length > 0);
+    setUser(readStoredUser());
   }, [location.key]);
 
-  // Sincroniza se limpar sessão em outra aba (evento storage)
+  // 🔔 Reage imediatamente a login/logout na MESMA aba (evento customizado)
+  useEffect(() => {
+    const onAuth = () => setUser(readStoredUser());
+    window.addEventListener(AUTH_EVENT, onAuth);
+    return () => window.removeEventListener(AUTH_EVENT, onAuth);
+  }, []);
+
+  // Multi-aba: se outra aba fizer login/logout (aqui o 'storage' funciona)
   useEffect(() => {
     const onStorage = (e) => {
-      if (e.key === 'usuario' || e.key === 'dadosTurno') {
-        const u = readStoredUser();
-        setUser(u);
-        const dt = readDadosTurno();
-        setDadosTurno(dt);
-        setTurnoConfirmado(!!dt && Array.isArray(dt.maquinas) && dt.maquinas.length > 0);
-      }
+      if (e.key === 'usuario') setUser(readStoredUser());
     };
     window.addEventListener('storage', onStorage);
     return () => window.removeEventListener('storage', onStorage);
   }, []);
 
-  // (Opcional) mantém compatibilidade com páginas existentes
-  const handleTurnoConfirmado = (selecao) => {
-    setDadosTurno(selecao);
-    setTurnoConfirmado(true);
-  };
-
-  if (loading) {
-    return <div style={{ padding: '20px' }}>Carregando...</div>;
-  }
+  const role = (user?.role || '').trim().toLowerCase();
 
   return (
     <DndProvider backend={HTML5Backend}>
       <Toaster position="top-right" />
       <Routes>
-        {user ? (
-          userRole === 'operador' ? (
-            <>
-              <Route
-                path="/*"
-                element={
-                  turnoConfirmado ? (
-                    <OperatorFlow user={user} dadosTurno={dadosTurno} />
-                  ) : (
-                    <InicioTurnoPage user={user} onTurnoConfirmado={handleTurnoConfirmado} />
-                  )
-                }
-              />
-              <Route path="/checklist/:maquinaId" element={<ChecklistPage user={user} />} />
-            </>
-          ) : (
+        {!user && <Route path="/*" element={<LoginPage />} />}
+
+        {user && role === 'operador' && (
+          <>
+            {/* Wizard fora do layout */}
+            <Route path="/inicio-turno" element={<InicioTurnoPage user={user} />} />
+            {/* App “normal” com sidebar etc. */}
             <Route path="/*" element={<MainLayout user={user} />} />
-          )
-        ) : (
-          <Route path="/*" element={<LoginPage />} />
+          </>
+        )}
+
+        {user && role !== 'operador' && (
+          <Route path="/*" element={<MainLayout user={user} />} />
         )}
       </Routes>
     </DndProvider>
   );
 }
-
-export default App;

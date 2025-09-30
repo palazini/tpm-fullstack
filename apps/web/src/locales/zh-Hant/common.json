@@ -258,7 +258,9 @@
     "maintainer": "維護員",
     "logout": "登出",
     "error": "發生錯誤。",
-    "machine": "機器"
+    "machine": "機器",
+    "loadError": "載入資料失敗。",
+    "back": "返回"
   },
   "chamadoDetalhe": {
     "notFound": "找不到工單。",
@@ -622,7 +624,8 @@
     "confirmBtn": "確認並開始檢查表",
     "alert": {
       "selectOne": "請至少選擇一台機器。"
-    }
+    },
+    "sentToday": "✓ 今日已傳送"
   },
   "tarefasDiarias": {
     "title": "每日任務",
@@ -645,7 +648,10 @@
     "send": "送出檢查表",
     "sending": "送出中...",
     "toastSent": "檢查表已送出！已產生 {{count}} 張工單。",
-    "toastFail": "無法送出檢查表。"
+    "toastFail": "無法送出檢查表。",
+    "allDone": "檢查清單已完成！",
+    "sendAndNext": "提交並前往下一個",
+    "finishAll": "提交並完成"
   },
   "operatorDashboard": {
     "form": {

@@ -258,7 +258,9 @@
     "maintainer": "Manutentor",
     "logout": "Sair",
     "error": "Ocorreu um erro.",
-    "machine": "Máquina"
+    "machine": "Máquina",
+    "loadError": "Falha ao carregar dados.",
+    "back": "Voltar"
   },
   "chamadoDetalhe": {
     "notFound": "Chamado não encontrado.",
@@ -622,7 +624,8 @@
     "confirmBtn": "Confirmar e Iniciar Checklists",
     "alert": {
       "selectOne": "Por favor, selecione pelo menos uma máquina."
-    }
+    },
+    "sentToday": "✓ enviada hoje"
   },
   "tarefasDiarias": {
     "title": "Tarefas Diárias",
@@ -645,7 +648,10 @@
     "send": "Enviar Checklist",
     "sending": "Enviando...",
     "toastSent": "Checklist enviado! {{count}} chamado(s) gerado(s).",
-    "toastFail": "Não foi possível enviar o checklist."
+    "toastFail": "Não foi possível enviar o checklist.",
+    "allDone": "Checklists concluídas!",
+    "sendAndNext": "Enviar e próxima",
+    "finishAll": "Enviar e finalizar"
   },
   "operatorDashboard": {
     "form": {

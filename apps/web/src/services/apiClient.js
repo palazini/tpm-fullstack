@@ -1,4 +1,4 @@
-﻿// src/services/apiClient.js
+// src/services/apiClient.js
 export const BASE = (
   import.meta.env?.VITE_API_URL ||
   import.meta.env?.VITE_API_BASE ||        // opcional: aceita os dois nomes
