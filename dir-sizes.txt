@@ -1,0 +1,9 @@
+
+Dir                                                                               MB
+---                                                                               --
+C:\Users\gabriel.palazini\Documents\Melhoria Contínua\TPM\manutencao\apps     189,76
+C:\Users\gabriel.palazini\Documents\Melhoria Contínua\TPM\manutencao\packages   0,04
+C:\Users\gabriel.palazini\Documents\Melhoria Contínua\TPM\manutencao\infra         0
+
+
+
