@@ -1,33 +1,33 @@
 import type { NextFunction, Request, Response } from "express";
+import { env } from "../config/env";
 import { pool } from "../db";
+import { DEFAULT_ROLE, normalizeRole } from "../auth/roles";
 
-type Role = "operador" | "manutentor" | "gestor" | "admin";
+const AUTH_STRICT = env.auth.strict;
 
-const VALID_ROLES: Role[] = ["operador", "manutentor", "gestor", "admin"];
-const ROLE_SET = new Set<Role>(VALID_ROLES);
+type RequestUser = NonNullable<Request["user"]>;
 
-// true (padrão) => exige usuário no DB; false => permite fallback (DEV)
-const AUTH_STRICT = String(process.env.AUTH_STRICT ?? "true").toLowerCase() !== "false";
-
-function normalizeRole(value: string | undefined | null): Role {
-  const candidate = String(value ?? "").trim().toLowerCase();
-  return ROLE_SET.has(candidate as Role) ? (candidate as Role) : "operador";
-}
+type DbUserRow = {
+  id: number | null;
+  nome: string | null;
+  email: string | null;
+  role: string | null;
+};
 
 export async function userFromHeader(req: Request, res: Response, next: NextFunction) {
   try {
     const email = String(req.header("x-user-email") || "").trim();
 
     // se já foi autenticado por JWT e tem req.user, não mexe
-    if ((req as any).user?.id) return next();
+    if (req.user?.id) return next();
 
     if (!email) {
-      (req as any).user = undefined;
+      req.user = undefined;
       return next();
     }
 
     // 🔎 AGORA buscamos também o role no DB
-    const { rows } = await pool.query(
+    const { rows } = await pool.query<DbUserRow>(
       `SELECT id, nome, email, role
          FROM public.usuarios
         WHERE lower(email) = lower($1)
@@ -40,23 +40,33 @@ export async function userFromHeader(req: Request, res: Response, next: NextFunc
         return res.status(401).json({ error: "USUARIO_NAO_CADASTRADO" });
       }
       // modo DEV (não-estrito): cria um usuário "temporário" com operador
-      (req as any).user = { id: undefined, email, name: null, role: "operador" };
+      const fallbackUser: RequestUser = {
+        id: undefined,
+        email,
+        name: null,
+        role: DEFAULT_ROLE,
+      };
+      req.user = fallbackUser;
       return next();
     }
 
-    const row = rows[0];
+    const row = rows[0]!;
 
     // ✅ SEMPRE usar o role vindo do DB (ignorar x-user-role)
-    (req as any).user = {
-      id: row.id,
+    const requestUser: RequestUser = {
+      id: row.id ?? undefined,
       email: row.email ?? email,
       name: row.nome ?? null,
       role: normalizeRole(row.role),
     };
 
+    req.user = requestUser;
+
     return next();
   } catch (error) {
     console.error("userFromHeader", error);
-    return next(error);
+    const normalizedError =
+      error instanceof Error ? error : new Error("userFromHeader middleware failed");
+    return next(normalizedError);
   }
 }
