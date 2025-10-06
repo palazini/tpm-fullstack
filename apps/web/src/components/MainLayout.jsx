@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Routes, Route, NavLink, Link, useNavigate } from 'react-router-dom';
 import {
   FiHome, FiLogOut, FiCheckSquare, FiUser, FiCalendar, FiUsers,
-  FiServer, FiMenu, FiX, FiBarChart2, FiPackage, FiClipboard, FiPieChart, FiPlusCircle
+  FiServer, FiMenu, FiX, FiBarChart2, FiPackage, FiClipboard, FiPieChart, FiPlusCircle, FiMessageSquare
 } from 'react-icons/fi';
 import styles from './MainLayout.module.css';
 
@@ -24,6 +24,7 @@ import EstoquePage from '../pages/EstoquePage.jsx';
 import MeusChamados from '../pages/MeusChamados';
 import AbrirChamadoManutentor from '../pages/AbrirChamadoManutentor.jsx';
 import LanguageMenu from '../components/LanguageMenu.jsx';
+import PziniChatBot from '../pages/PziniChatBot.jsx';
 
 import logo from '../assets/logo-sidebar.png';
 import { useTranslation } from 'react-i18next';
@@ -222,6 +223,14 @@ const MainLayout = ({ user }) => {
             <span>{t('nav.rootCauses')}</span>
           </NavLink>
 
+          <NavLink
+            to="/chatbot"
+            className={({ isActive }) => isActive ? `${styles.navLink} ${styles.activeLink}` : styles.navLink}
+          >
+            <FiMessageSquare className={styles.navIcon} />
+            <span>{t('nav.pzinibot', 'Pzini')}</span>
+          </NavLink>
+
           <h3 className={styles.navSectionTitle}>{t('layout.sections.managePeople')}</h3>
           <NavLink to="/gerir-utilizadores" className={({ isActive }) => isActive ? `${styles.navLink} ${styles.activeLink}` : styles.navLink}>
             <FiUsers className={styles.navIcon} />
@@ -310,6 +319,7 @@ const MainLayout = ({ user }) => {
           <Route path="/calendario-geral" element={<CalendarioGeralPage user={user} />} />
           <Route path="/estoque" element={<EstoquePage user={user} />} />
           <Route path="/gerir-utilizadores" element={<GerirUtilizadoresPage user={user} />} />
+          <Route path="/chatbot" element={<PziniChatBot user={user} />} />
         </Routes>
       </main>
     </div>
