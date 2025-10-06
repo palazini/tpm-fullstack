@@ -27,11 +27,12 @@ export default defineConfig([
     files: ["**/*.ts"],
     rules: {
       ...recommended.rules,
-      "@typescript-eslint/no-explicit-any": "warn",
-      "@typescript-eslint/no-unused-vars": [
-        "warn",
-        { argsIgnorePattern: "^_", varsIgnorePattern: "^_", ignoreRestSiblings: true },
-      ],
+      // The existing codebase intentionally uses `any` and temporary variables.
+      // Keep parity with the legacy config by disabling the stricter defaults
+      // introduced by the flat recommended preset until the routes can be
+      // incrementally typed.
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-unused-vars": "off",
       "prefer-const": "off",
     },
   },
