@@ -21,12 +21,12 @@ function getLoggedUserEmail() {
   return '';
 }
 
-function buildAuthHeaders(auth) {
-  const h = { 'Content-Type': 'application/json' };
-  const email = (auth?.email || getLoggedUserEmail() || '').trim().toLowerCase();
+function buildAuthHeaders(auth = {}) {
+  const h = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
+  const email = String(auth?.email ?? getLoggedUserEmail() ?? '').trim().toLowerCase();
 
   if (email) h['x-user-email'] = email;
-  // papel via header e opcional; o back ja confere o papel no DB.
+  // papel via header é opcional; o back usa o role do DB
   if (auth?.role) h['x-user-role'] = String(auth.role).trim().toLowerCase();
 
   return h;
@@ -735,6 +735,43 @@ export async function listarEventosChamado(id) {
   const data = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(data?.error || `Erro ao listar eventos (${r.status})`);
   return data.items || [];
+}
+
+//--------------------AI--------------------------------
+/** POST /ai/chat/sql — { sql, rows, fields, source } */
+export async function aiChatSql({ question, noCache = false } = {}, auth = {}) {
+  if (!question || !String(question).trim()) {
+    throw new Error('question é obrigatório');
+  }
+
+  const res = await fetch(`${BASE}/ai/chat/sql`, {
+    method: 'POST',
+    headers: buildAuthHeaders(auth),
+    body: JSON.stringify({ question, noCache: !!noCache })
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data?.error || `Erro ao executar SQL (${res.status})`);
+  // data: { sql, rows, fields, source }
+  return data;
+}
+
+/** POST /ai/chat/text — { sql, rows } (fts) */
+export async function aiTextSearch({ q, limit = 20 } = {}, auth = {}) {
+  if (!q || !String(q).trim()) {
+    throw new Error('q é obrigatório');
+  }
+
+  const res = await fetch(`${BASE}/ai/chat/text`, {
+    method: 'POST',
+    headers: buildAuthHeaders(auth),
+    body: JSON.stringify({ q, limit })
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data?.error || `Erro no FTS (${res.status})`);
+  // data: { sql, rows }
+  return data;
 }
 
 export function connectSSE(handlers = {}) {

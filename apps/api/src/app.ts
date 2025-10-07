@@ -13,6 +13,7 @@ import { usuariosRouter } from './routes/usuarios';
 import { authRouter } from './routes/auth';
 import { checklistsRouter } from './routes/checklists';
 import { analyticsRouter } from './routes/analytics';
+import { botRouter } from './routes/bot';
 import { env } from './config/env';
 
 const app = express();
@@ -20,7 +21,8 @@ const app = express();
 const ALLOW = env.cors.allowedOrigins;
 
 app.use(cors({
-  origin: ALLOW.length ? ALLOW : true, // se não definir CORS_ORIGINS, libera tudo (útil p/ dev)
+  // se não definir CORS_ORIGINS, libera tudo (útil p/ dev)
+  origin: ALLOW.length ? ALLOW : true,
 }));
 
 app.use(express.json());
@@ -37,5 +39,6 @@ app.use(usuariosRouter);
 app.use(authRouter);
 app.use(checklistsRouter);
 app.use(analyticsRouter);
+app.use(botRouter);
 
 export { app };

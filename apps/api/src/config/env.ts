@@ -2,6 +2,11 @@ import dotenv from "dotenv";
 import { z } from "zod";
 
 let dotenvLoaded = false;
+
+type DeepReadonly<T> = {
+  readonly [Key in keyof T]: DeepReadonly<T[Key]>;
+};
+
 type ReadonlyEnv = DeepReadonly<Env>;
 let cachedEnv: ReadonlyEnv | null = null;
 
@@ -23,31 +28,21 @@ const rawEnvSchema = z
     PGPOOL_IDLE_TIMEOUT: z.coerce.number().int().nonnegative().optional(),
     AUTH_STRICT: z.string().optional(),
   })
-  .transform(value => ({ ...value, PGPOOL_IDLE_TIMEOUT: value.PGPOOL_IDLE_TIMEOUT ?? 30_000 }));
+  .transform(v => ({ ...v, PGPOOL_IDLE_TIMEOUT: v.PGPOOL_IDLE_TIMEOUT ?? 30_000 }));
 
 type RawEnv = z.infer<typeof rawEnvSchema>;
 
-type DeepReadonly<T> = {
-  readonly [Key in keyof T]: DeepReadonly<T[Key]>;
-};
-
 export type Env = {
   nodeEnv: RawEnv["NODE_ENV"];
-  server: {
-    port: number;
-  };
-  cors: {
-    allowedOrigins: readonly string[];
-  };
+  server: { port: number };
+  cors: { allowedOrigins: readonly string[] };
   database: {
     connectionString: string;
     ssl?: { rejectUnauthorized: false };
     maxConnections: number;
     idleTimeoutMillis: number;
   };
-  auth: {
-    strict: boolean;
-  };
+  auth: { strict: boolean };
 };
 
 function ensureDotenvLoaded(): void {
@@ -99,13 +94,8 @@ function resolveConnectionString(raw: RawEnv): string {
 function shouldUseSsl(raw: RawEnv, connectionString: string): boolean {
   const explicit = (raw.PGSSLMODE ?? raw.PGSSL ?? "").trim().toLowerCase();
 
-  if (["require", "true", "1"].includes(explicit)) {
-    return true;
-  }
-
-  if (["disable", "false", "0"].includes(explicit)) {
-    return false;
-  }
+  if (["require", "true", "1"].includes(explicit)) return true;
+  if (["disable", "false", "0"].includes(explicit)) return false;
 
   return (
     /(^|[?&])sslmode=require/i.test(connectionString) ||
@@ -116,24 +106,16 @@ function shouldUseSsl(raw: RawEnv, connectionString: string): boolean {
 function parseCorsOrigins(rawOrigins: string | undefined): string[] {
   return (rawOrigins ?? "")
     .split(",")
-    .map(origin => origin.trim())
+    .map(o => o.trim())
     .filter(Boolean);
 }
 
 function parseBoolean(input: string | undefined, defaultValue: boolean): boolean {
-  if (input === undefined) {
-    return defaultValue;
-  }
+  if (input === undefined) return defaultValue;
 
   const normalized = input.trim().toLowerCase();
-
-  if (["1", "true", "yes", "on"].includes(normalized)) {
-    return true;
-  }
-
-  if (["0", "false", "no", "off"].includes(normalized)) {
-    return false;
-  }
+  if (["1", "true", "yes", "on"].includes(normalized)) return true;
+  if (["0", "false", "no", "off"].includes(normalized)) return false;
 
   return defaultValue;
 }
@@ -142,21 +124,15 @@ function toEnv(raw: RawEnv): Env {
   const connectionString = resolveConnectionString(raw);
   const env: Env = {
     nodeEnv: raw.NODE_ENV,
-    server: {
-      port: raw.PORT,
-    },
-    cors: {
-      allowedOrigins: parseCorsOrigins(raw.CORS_ORIGINS),
-    },
+    server: { port: raw.PORT },
+    cors: { allowedOrigins: parseCorsOrigins(raw.CORS_ORIGINS) },
     database: {
       connectionString,
       ssl: shouldUseSsl(raw, connectionString) ? { rejectUnauthorized: false } : undefined,
       maxConnections: raw.PGPOOL_MAX ?? 10,
       idleTimeoutMillis: raw.PGPOOL_IDLE_TIMEOUT,
     },
-    auth: {
-      strict: parseBoolean(raw.AUTH_STRICT, true),
-    },
+    auth: { strict: parseBoolean(raw.AUTH_STRICT, true) },
   };
 
   return env;
@@ -178,10 +154,7 @@ export function loadEnv(overrides?: Partial<NodeJS.ProcessEnv>): ReadonlyEnv {
   }
 
   const env = toEnv(parseRawEnv(overrides));
-
-  if (overrides) {
-    return freezeEnv(env);
-  }
+  if (overrides) return freezeEnv(env);
 
   cachedEnv = freezeEnv(env);
   return cachedEnv;

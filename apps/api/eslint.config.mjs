@@ -5,11 +5,15 @@ import { defineConfig, globalIgnores } from "eslint/config";
 const [baseConfig, eslintRecommended, recommended] =
   tseslint.configs["flat/recommended"];
 
+// Padrões úteis
 const tsFiles = ["**/*.ts"];
 const legacyRouteGlobs = ["src/routes/**/*.ts"];
 
 export default defineConfig([
+  // Ignora saídas de build
   globalIgnores(["dist", "build", "node_modules"]),
+
+  // Base do TS/ESLint
   {
     ...baseConfig,
     files: tsFiles,
@@ -21,31 +25,33 @@ export default defineConfig([
       },
     },
   },
+
+  // Regras recomendadas do ESLint
   {
     ...eslintRecommended,
     files: tsFiles,
   },
+
+  // Regras recomendadas do @typescript-eslint com ajustes do projeto
   {
     ...recommended,
     files: tsFiles,
     rules: {
       ...recommended.rules,
+      // Aviso (não erro) para variáveis não usadas e ignora as que começam com "_"
       "@typescript-eslint/no-unused-vars": [
         "warn",
-        {
-          argsIgnorePattern: "^_",
-          varsIgnorePattern: "^_",
-        },
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
       ],
+      // Mantém comportamento atual do codebase
       "prefer-const": "off",
     },
   },
+
+  // Afrouxa regras apenas nas rotas legadas
   {
     files: legacyRouteGlobs,
     rules: {
-      // The legacy routers rely heavily on `any` and unused parameters. Keep the
-      // previous lint behavior locally so new modules benefit from stricter
-      // defaults while we incrementally type the routes.
       "@typescript-eslint/no-explicit-any": "off",
       "@typescript-eslint/no-unused-vars": "off",
     },
