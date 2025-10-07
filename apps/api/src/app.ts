@@ -1,6 +1,5 @@
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 
 import { userFromHeader } from './middlewares/userFromHeader';
 import { eventsRouter } from './routes/events';
@@ -14,13 +13,11 @@ import { usuariosRouter } from './routes/usuarios';
 import { authRouter } from './routes/auth';
 import { checklistsRouter } from './routes/checklists';
 import { analyticsRouter } from './routes/analytics';
-
-dotenv.config();
+import { env } from './config/env';
 
 const app = express();
 
-const raw = process.env.CORS_ORIGINS ?? '';
-const ALLOW = raw.split(',').map(s => s.trim()).filter(Boolean);
+const ALLOW = env.cors.allowedOrigins;
 
 app.use(cors({
   origin: ALLOW.length ? ALLOW : true, // se não definir CORS_ORIGINS, libera tudo (útil p/ dev)

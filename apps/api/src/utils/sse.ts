@@ -24,7 +24,9 @@ export function setupSSEClient(res: Response): () => void {
   res.setHeader('Cache-Control', 'no-cache, no-transform');
   res.setHeader('Connection', 'keep-alive');
   res.setHeader('X-Accel-Buffering', 'no');
-  (res as any).flushHeaders?.();
+  if (typeof res.flushHeaders === 'function') {
+    res.flushHeaders();
+  }
 
   const client: SSEClient = { id: nextClientId++, res };
   clients.add(client);
