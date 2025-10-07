@@ -1,73 +1,163 @@
 import dotenv from "dotenv";
+import { z } from "zod";
 
-dotenv.config();
+let dotenvLoaded = false;
 
-function parseNumber(value: string | undefined, fallback: number): number {
-  const parsed = Number.parseInt(value ?? "", 10);
-  return Number.isNaN(parsed) ? fallback : parsed;
+type DeepReadonly<T> = {
+  readonly [Key in keyof T]: DeepReadonly<T[Key]>;
+};
+
+type ReadonlyEnv = DeepReadonly<Env>;
+let cachedEnv: ReadonlyEnv | null = null;
+
+const rawEnvSchema = z
+  .object({
+    NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+    PORT: z.coerce.number().int().positive().max(65_535).default(3_000),
+    CORS_ORIGINS: z.string().optional(),
+    DATABASE_URL: z.string().min(1).optional(),
+    PG_URL: z.string().min(1).optional(),
+    PGHOST: z.string().min(1).optional(),
+    PGPORT: z.coerce.number().int().positive().max(65_535).optional(),
+    PGUSER: z.string().optional(),
+    PGPASSWORD: z.string().optional(),
+    PGDATABASE: z.string().optional(),
+    PGSSLMODE: z.string().optional(),
+    PGSSL: z.string().optional(),
+    PGPOOL_MAX: z.coerce.number().int().positive().optional(),
+    PGPOOL_IDLE_TIMEOUT: z.coerce.number().int().nonnegative().optional(),
+    AUTH_STRICT: z.string().optional(),
+  })
+  .transform(v => ({ ...v, PGPOOL_IDLE_TIMEOUT: v.PGPOOL_IDLE_TIMEOUT ?? 30_000 }));
+
+type RawEnv = z.infer<typeof rawEnvSchema>;
+
+export type Env = {
+  nodeEnv: RawEnv["NODE_ENV"];
+  server: { port: number };
+  cors: { allowedOrigins: readonly string[] };
+  database: {
+    connectionString: string;
+    ssl?: { rejectUnauthorized: false };
+    maxConnections: number;
+    idleTimeoutMillis: number;
+  };
+  auth: { strict: boolean };
+};
+
+function ensureDotenvLoaded(): void {
+  if (!dotenvLoaded) {
+    dotenv.config();
+    dotenvLoaded = true;
+  }
 }
 
-function resolveConnectionString(): string {
-  if (
-    process.env.PGHOST ||
-    process.env.PGUSER ||
-    process.env.PGPASSWORD ||
-    process.env.PGDATABASE ||
-    process.env.PGPORT
-  ) {
-    const host = process.env.PGHOST || "localhost";
-    const port = process.env.PGPORT || "5432";
-    const user = process.env.PGUSER || "postgres";
-    const password = encodeURIComponent(process.env.PGPASSWORD || "");
-    const database = process.env.PGDATABASE || "postgres";
+function formatZodErrors(error: z.ZodError): string {
+  return error.errors
+    .map(issue => {
+      const path = issue.path.join(".") || "<root>";
+      return `  • ${path}: ${issue.message}`;
+    })
+    .join("\n");
+}
+
+function parseRawEnv(overrides?: Partial<NodeJS.ProcessEnv>): RawEnv {
+  ensureDotenvLoaded();
+
+  const result = rawEnvSchema.safeParse({
+    ...process.env,
+    ...overrides,
+  });
+
+  if (!result.success) {
+    const formatted = formatZodErrors(result.error);
+    throw new Error(`Invalid environment variables:\n${formatted}`);
+  }
+
+  return result.data;
+}
+
+function resolveConnectionString(raw: RawEnv): string {
+  if (raw.PGHOST || raw.PGUSER || raw.PGPASSWORD || raw.PGDATABASE || raw.PGPORT) {
+    const host = raw.PGHOST ?? "localhost";
+    const port = raw.PGPORT ?? 5_432;
+    const user = encodeURIComponent(raw.PGUSER ?? "postgres");
+    const password = encodeURIComponent(raw.PGPASSWORD ?? "");
+    const database = encodeURIComponent(raw.PGDATABASE ?? "postgres");
 
     return `postgres://${user}:${password}@${host}:${port}/${database}`;
   }
 
-  const url = process.env.DATABASE_URL || process.env.PG_URL;
-  if (url) {
-    return url;
-  }
-
-  return "postgres://postgres:@localhost:5432/postgres";
+  return raw.DATABASE_URL ?? raw.PG_URL ?? "postgres://postgres:@localhost:5432/postgres";
 }
 
-function shouldUseSsl(connectionString: string): boolean {
-  const pgSslMode = String(process.env.PGSSLMODE || process.env.PGSSL || "").toLowerCase();
-  if (pgSslMode === "require") {
-    return true;
-  }
+function shouldUseSsl(raw: RawEnv, connectionString: string): boolean {
+  const explicit = (raw.PGSSLMODE ?? raw.PGSSL ?? "").trim().toLowerCase();
 
-  const urlForcesSSL =
+  if (["require", "true", "1"].includes(explicit)) return true;
+  if (["disable", "false", "0"].includes(explicit)) return false;
+
+  return (
     /(^|[?&])sslmode=require/i.test(connectionString) ||
-    /neon|supabase|render|heroku/i.test(connectionString);
-
-  return urlForcesSSL;
+    /neon|supabase|render|heroku/i.test(connectionString)
+  );
 }
 
 function parseCorsOrigins(rawOrigins: string | undefined): string[] {
   return (rawOrigins ?? "")
     .split(",")
-    .map(origin => origin.trim())
+    .map(o => o.trim())
     .filter(Boolean);
 }
 
-const connectionString = resolveConnectionString();
+function parseBoolean(input: string | undefined, defaultValue: boolean): boolean {
+  if (input === undefined) return defaultValue;
 
-export const env = {
-  nodeEnv: process.env.NODE_ENV || "development",
-  server: {
-    port: parseNumber(process.env.PORT, 3000),
-  },
-  cors: {
-    allowedOrigins: parseCorsOrigins(process.env.CORS_ORIGINS),
-  },
-  database: {
-    connectionString,
-    ssl: shouldUseSsl(connectionString) ? { rejectUnauthorized: false } : undefined,
-    maxConnections: parseNumber(process.env.PGPOOL_MAX, 10),
-    idleTimeoutMillis: parseNumber(process.env.PGPOOL_IDLE_TIMEOUT, 30_000),
-  },
-} as const;
+  const normalized = input.trim().toLowerCase();
+  if (["1", "true", "yes", "on"].includes(normalized)) return true;
+  if (["0", "false", "no", "off"].includes(normalized)) return false;
 
-export type Env = typeof env;
+  return defaultValue;
+}
+
+function toEnv(raw: RawEnv): Env {
+  const connectionString = resolveConnectionString(raw);
+  const env: Env = {
+    nodeEnv: raw.NODE_ENV,
+    server: { port: raw.PORT },
+    cors: { allowedOrigins: parseCorsOrigins(raw.CORS_ORIGINS) },
+    database: {
+      connectionString,
+      ssl: shouldUseSsl(raw, connectionString) ? { rejectUnauthorized: false } : undefined,
+      maxConnections: raw.PGPOOL_MAX ?? 10,
+      idleTimeoutMillis: raw.PGPOOL_IDLE_TIMEOUT,
+    },
+    auth: { strict: parseBoolean(raw.AUTH_STRICT, true) },
+  };
+
+  return env;
+}
+
+function freezeEnv(env: Env): DeepReadonly<Env> {
+  return Object.freeze({
+    ...env,
+    server: Object.freeze({ ...env.server }),
+    cors: Object.freeze({ ...env.cors, allowedOrigins: Object.freeze([...env.cors.allowedOrigins]) }),
+    database: Object.freeze({ ...env.database }),
+    auth: Object.freeze({ ...env.auth }),
+  });
+}
+
+export function loadEnv(overrides?: Partial<NodeJS.ProcessEnv>): ReadonlyEnv {
+  if (!overrides && cachedEnv) {
+    return cachedEnv;
+  }
+
+  const env = toEnv(parseRawEnv(overrides));
+  if (overrides) return freezeEnv(env);
+
+  cachedEnv = freezeEnv(env);
+  return cachedEnv;
+}
+
+export const env = loadEnv();

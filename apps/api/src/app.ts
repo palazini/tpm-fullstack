@@ -21,7 +21,8 @@ const app = express();
 const ALLOW = env.cors.allowedOrigins;
 
 app.use(cors({
-  origin: ALLOW.length ? ALLOW : true, // se não definir CORS_ORIGINS, libera tudo (útil p/ dev)
+  // se não definir CORS_ORIGINS, libera tudo (útil p/ dev)
+  origin: ALLOW.length ? ALLOW : true,
 }));
 
 app.use(express.json());
