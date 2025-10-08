@@ -1,6 +1,6 @@
 // src/components/MainLayout.jsx
 import React, { useState, useEffect, useMemo } from 'react';
-import { Routes, Route, NavLink, Link, useNavigate } from 'react-router-dom';
+import { Routes, Route, NavLink, Link, useNavigate, Navigate } from 'react-router-dom';
 import {
   FiHome, FiLogOut, FiCheckSquare, FiUser, FiCalendar, FiUsers,
   FiServer, FiMenu, FiX, FiBarChart2, FiPackage, FiClipboard, FiPieChart, FiPlusCircle, FiMessageSquare
@@ -346,7 +346,10 @@ const MainLayout = ({ user }) => {
           <Route path="/calendario-geral" element={<CalendarioGeralPage user={user} />} />
           <Route path="/estoque" element={<EstoquePage user={user} />} />
           <Route path="/gerir-utilizadores" element={<GerirUtilizadoresPage user={user} />} />
-          <Route path="/chatbot" element={<PziniChatBot user={user} />} />
+          <Route
+            path="/chatbot"
+            element={isPt ? <PziniChatBot user={user} /> : <Navigate to="/" replace />}
+          />
         </Routes>
       </main>
     </div>
