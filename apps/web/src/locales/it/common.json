@@ -488,6 +488,30 @@
       }
     }
   },
+  "pecaModal": {
+    "title": {
+      "create": "Nuova parte",
+      "edit": "Modifica parte"
+    },
+    "fields": {
+      "code": "Codice",
+      "name": "Nome",
+      "category": "Categoria",
+      "unit": "Unità",
+      "stockCurrent": "Giacenza attuale",
+      "stockMinimum": "Giacenza minima",
+      "location": "Ubicazione"
+    },
+    "actions": {
+      "save": "Salva",
+      "saving": "Salvataggio in corso..."
+    },
+    "toasts": {
+      "created": "Parte creata con successo!",
+      "updated": "Parte aggiornata con successo!",
+      "error": "Impossibile salvare la parte."
+    }
+  },
   "analiseFalhas": {
     "title": "Analisi guasti correttivi",
     "loading": "Analisi dei dati...",

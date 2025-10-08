@@ -488,6 +488,30 @@
       }
     }
   },
+  "pecaModal": {
+    "title": {
+      "create": "New Part",
+      "edit": "Edit Part"
+    },
+    "fields": {
+      "code": "Code",
+      "name": "Name",
+      "category": "Category",
+      "unit": "Unit",
+      "stockCurrent": "Current Stock",
+      "stockMinimum": "Minimum Stock",
+      "location": "Location"
+    },
+    "actions": {
+      "save": "Save",
+      "saving": "Saving..."
+    },
+    "toasts": {
+      "created": "Part created successfully!",
+      "updated": "Part updated successfully!",
+      "error": "Failed to save part."
+    }
+  },
   "analiseFalhas": {
     "title": "Corrective Failure Analysis",
     "loading": "Analyzing data...",

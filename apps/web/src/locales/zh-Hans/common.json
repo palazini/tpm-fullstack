@@ -488,6 +488,30 @@
       }
     }
   },
+  "pecaModal": {
+    "title": {
+      "create": "新建零件",
+      "edit": "编辑零件"
+    },
+    "fields": {
+      "code": "编码",
+      "name": "名称",
+      "category": "类别",
+      "unit": "单位",
+      "stockCurrent": "当前库存",
+      "stockMinimum": "最低库存",
+      "location": "存放位置"
+    },
+    "actions": {
+      "save": "保存",
+      "saving": "正在保存..."
+    },
+    "toasts": {
+      "created": "零件创建成功！",
+      "updated": "零件更新成功！",
+      "error": "保存零件失败。"
+    }
+  },
   "analiseFalhas": {
     "title": "纠正性故障分析",
     "loading": "正在分析数据...",

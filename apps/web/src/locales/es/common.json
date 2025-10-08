@@ -488,6 +488,30 @@
       }
     }
   },
+  "pecaModal": {
+    "title": {
+      "create": "Nueva pieza",
+      "edit": "Editar pieza"
+    },
+    "fields": {
+      "code": "Código",
+      "name": "Nombre",
+      "category": "Categoría",
+      "unit": "Unidad",
+      "stockCurrent": "Stock actual",
+      "stockMinimum": "Stock mínimo",
+      "location": "Ubicación"
+    },
+    "actions": {
+      "save": "Guardar",
+      "saving": "Guardando..."
+    },
+    "toasts": {
+      "created": "¡Pieza creada correctamente!",
+      "updated": "¡Pieza actualizada correctamente!",
+      "error": "Error al guardar la pieza."
+    }
+  },
   "analiseFalhas": {
     "title": "Análisis de Fallas Correctivas",
     "loading": "Analizando datos...",

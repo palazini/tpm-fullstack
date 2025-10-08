@@ -488,6 +488,30 @@
       }
     }
   },
+  "pecaModal": {
+    "title": {
+      "create": "새 부품",
+      "edit": "부품 편집"
+    },
+    "fields": {
+      "code": "코드",
+      "name": "이름",
+      "category": "카테고리",
+      "unit": "단위",
+      "stockCurrent": "현재 재고",
+      "stockMinimum": "최소 재고",
+      "location": "보관 위치"
+    },
+    "actions": {
+      "save": "저장",
+      "saving": "저장 중..."
+    },
+    "toasts": {
+      "created": "부품이 성공적으로 생성되었습니다!",
+      "updated": "부품이 성공적으로 업데이트되었습니다!",
+      "error": "부품 저장에 실패했습니다."
+    }
+  },
   "analiseFalhas": {
     "title": "수정 보전 고장 분석",
     "loading": "데이터 분석 중...",

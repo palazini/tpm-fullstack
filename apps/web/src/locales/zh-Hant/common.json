@@ -488,6 +488,30 @@
       }
     }
   },
+  "pecaModal": {
+    "title": {
+      "create": "新增零件",
+      "edit": "編輯零件"
+    },
+    "fields": {
+      "code": "代碼",
+      "name": "名稱",
+      "category": "類別",
+      "unit": "單位",
+      "stockCurrent": "目前庫存",
+      "stockMinimum": "最低庫存",
+      "location": "存放位置"
+    },
+    "actions": {
+      "save": "儲存",
+      "saving": "正在儲存..."
+    },
+    "toasts": {
+      "created": "零件建立成功！",
+      "updated": "零件更新成功！",
+      "error": "儲存零件失敗。"
+    }
+  },
   "analiseFalhas": {
     "title": "矯正性故障分析",
     "loading": "資料分析中...",

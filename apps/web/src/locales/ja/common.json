@@ -488,6 +488,30 @@
       }
     }
   },
+  "pecaModal": {
+    "title": {
+      "create": "新規部品",
+      "edit": "部品を編集"
+    },
+    "fields": {
+      "code": "コード",
+      "name": "名称",
+      "category": "カテゴリ",
+      "unit": "単位",
+      "stockCurrent": "現在の在庫",
+      "stockMinimum": "最小在庫",
+      "location": "保管場所"
+    },
+    "actions": {
+      "save": "保存",
+      "saving": "保存中..."
+    },
+    "toasts": {
+      "created": "部品が正常に作成されました！",
+      "updated": "部品が正常に更新されました！",
+      "error": "部品の保存に失敗しました。"
+    }
+  },
   "analiseFalhas": {
     "title": "是正故障の分析",
     "loading": "データ分析中...",

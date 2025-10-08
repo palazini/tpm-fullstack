@@ -33,7 +33,7 @@ import { useTranslation } from 'react-i18next';
 import { listarChamados, listarAgendamentos, connectSSE } from '../services/apiClient';
 
 const MainLayout = ({ user }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const role = useMemo(() => (user?.role || '').trim().toLowerCase(), [user?.role]);
 
@@ -42,6 +42,30 @@ const MainLayout = ({ user }) => {
   const [hasSoonDue, setHasSoonDue] = useState(false);
   const [myActiveCount, setMyActiveCount] = useState(0);
   const hasMyActiveCalls = myActiveCount > 0;
+
+  // idioma atual é PT?
+  const isPt = (i18n?.language || '').toLowerCase().startsWith('pt');
+
+  // badge “BETA” (pill) para o item do ChatBot
+  const BetaTag = () => (
+    <span
+      style={{
+        marginLeft: 10,
+        padding: '0 6px',
+        borderRadius: 6,
+        fontSize: 10,
+        fontWeight: 700,
+        alignSelf: 'center',
+        lineHeight: '16px',
+        background: '#ffffffff',
+        color: '#000000ff',
+        border: '1px solid #000000ff'
+      }}
+      title="Beta"
+    >
+      BETA
+    </span>
+  );
 
   // Helpers de refresh (usados no mount e quando chegam eventos SSE)
   const refreshOpenCalls = async () => {
@@ -56,7 +80,7 @@ const MainLayout = ({ user }) => {
     try {
       const now = new Date();
       const from = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const to   = new Date(now.getTime() + 1 * 24 * 60 * 60 * 1000); // até amanhã
+      const to   = new Date(now.getTime() + 1 * 24 * 60 * 60 * 1000);
       const lista = await listarAgendamentos({ from: from.toISOString(), to: to.toISOString() });
       const qtd = (lista || []).filter(a =>
         a.status === 'agendado' && new Date(a.start_ts) <= to
@@ -94,7 +118,6 @@ const MainLayout = ({ user }) => {
       localStorage.removeItem('usuario');
       localStorage.removeItem('dadosTurno');
     } catch {}
-    // avisa o App imediatamente (mesma aba)
     window.dispatchEvent(new Event('auth-user-changed'));
     navigate('/login', { replace: true });
   };
@@ -223,13 +246,17 @@ const MainLayout = ({ user }) => {
             <span>{t('nav.rootCauses')}</span>
           </NavLink>
 
-          <NavLink
-            to="/chatbot"
-            className={({ isActive }) => isActive ? `${styles.navLink} ${styles.activeLink}` : styles.navLink}
-          >
-            <FiMessageSquare className={styles.navIcon} />
-            <span>{t('nav.pzinibot', 'Pzini')}</span>
-          </NavLink>
+          {/* Chatbot: só aparece se idioma for PT; com badge BETA */}
+          {isPt && (
+            <NavLink
+              to="/chatbot"
+              className={({ isActive }) => isActive ? `${styles.navLink} ${styles.activeLink}` : styles.navLink}
+            >
+              <FiMessageSquare className={styles.navIcon} />
+              <span>{t('nav.pzinibot', 'Pzini')}</span>
+              <BetaTag />
+            </NavLink>
+          )}
 
           <h3 className={styles.navSectionTitle}>{t('layout.sections.managePeople')}</h3>
           <NavLink to="/gerir-utilizadores" className={({ isActive }) => isActive ? `${styles.navLink} ${styles.activeLink}` : styles.navLink}>

@@ -1,11 +1,13 @@
 // src/pages/PecaModal.jsx
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { criarPeca, atualizarPeca } from '../services/apiClient';
 import Modal from '../components/Modal.jsx';
 import toast from 'react-hot-toast';
 import styles from './PecaModal.module.css';
 
 export default function PecaModal({ peca, onClose, user, onSaved }) {
+  const { t } = useTranslation();
   const [codigo, setCodigo] = useState('');
   const [nome, setNome] = useState('');
   const [categoria, setCategoria] = useState('');
@@ -46,28 +48,25 @@ export default function PecaModal({ peca, onClose, user, onSaved }) {
         nome: nome.trim(),
         categoria: categoria?.trim() || null,
         // "unidade" ainda não persiste no banco
-        estoqueAtual: Number(estoqueAtual || 0),  // opcional na criação
+        estoqueAtual: Number(estoqueAtual || 0), // opcional na criação
         estoqueMinimo: Number(estoqueMinimo || 0),
         localizacao: localizacao?.trim() || null,
       };
 
       let saved;
       if (peca === null) {
-        // criar
         saved = await criarPeca(payload, { role: user?.role, email: user?.email });
-        toast.success('Peça criada com sucesso!');
+        toast.success(t('pecaModal.toasts.created'));
       } else {
-        // editar
         saved = await atualizarPeca(peca.id, payload, { role: user?.role, email: user?.email });
-        toast.success('Peça atualizada com sucesso!');
+        toast.success(t('pecaModal.toasts.updated'));
       }
 
-      // Atualiza a lista do pai imediatamente (sem F5)
       onSaved?.(saved);
       onClose();
     } catch (err) {
       console.error('Erro ao salvar peça:', err);
-      toast.error('Falha ao salvar peça.');
+      toast.error(t('pecaModal.toasts.error'));
     } finally {
       setIsSaving(false);
     }
@@ -77,11 +76,11 @@ export default function PecaModal({ peca, onClose, user, onSaved }) {
     <Modal
       isOpen={true}
       onClose={onClose}
-      title={peca ? 'Editar Peça' : 'Nova Peça'}
+      title={peca ? t('pecaModal.title.edit') : t('pecaModal.title.create')}
     >
       <form onSubmit={handleSubmit} className={styles.form}>
         <div className={styles.formGroup}>
-          <label htmlFor="codigo">Código</label>
+          <label htmlFor="codigo">{t('pecaModal.fields.code')}</label>
           <input
             id="codigo"
             type="text"
@@ -93,7 +92,7 @@ export default function PecaModal({ peca, onClose, user, onSaved }) {
         </div>
 
         <div className={styles.formGroup}>
-          <label htmlFor="nome">Nome</label>
+          <label htmlFor="nome">{t('pecaModal.fields.name')}</label>
           <input
             id="nome"
             type="text"
@@ -105,7 +104,7 @@ export default function PecaModal({ peca, onClose, user, onSaved }) {
         </div>
 
         <div className={styles.formGroup}>
-          <label htmlFor="categoria">Categoria</label>
+          <label htmlFor="categoria">{t('pecaModal.fields.category')}</label>
           <input
             id="categoria"
             type="text"
@@ -116,7 +115,7 @@ export default function PecaModal({ peca, onClose, user, onSaved }) {
         </div>
 
         <div className={styles.formGroup}>
-          <label htmlFor="unidade">Unidade</label>
+          <label htmlFor="unidade">{t('pecaModal.fields.unit')}</label>
           <input
             id="unidade"
             type="text"
@@ -128,7 +127,7 @@ export default function PecaModal({ peca, onClose, user, onSaved }) {
         </div>
 
         <div className={styles.formGroup}>
-          <label htmlFor="estoqueAtual">Estoque Atual</label>
+          <label htmlFor="estoqueAtual">{t('pecaModal.fields.stockCurrent')}</label>
           <input
             id="estoqueAtual"
             type="number"
@@ -141,7 +140,7 @@ export default function PecaModal({ peca, onClose, user, onSaved }) {
         </div>
 
         <div className={styles.formGroup}>
-          <label htmlFor="estoqueMinimo">Estoque Mínimo</label>
+          <label htmlFor="estoqueMinimo">{t('pecaModal.fields.stockMinimum')}</label>
           <input
             id="estoqueMinimo"
             type="number"
@@ -154,7 +153,7 @@ export default function PecaModal({ peca, onClose, user, onSaved }) {
         </div>
 
         <div className={styles.formGroup}>
-          <label htmlFor="localizacao">Localização</label>
+          <label htmlFor="localizacao">{t('pecaModal.fields.location')}</label>
           <input
             id="localizacao"
             type="text"
@@ -164,12 +163,8 @@ export default function PecaModal({ peca, onClose, user, onSaved }) {
           />
         </div>
 
-        <button
-          type="submit"
-          className={styles.button}
-          disabled={isSaving}
-        >
-          {isSaving ? 'Salvando...' : 'Salvar'}
+        <button type="submit" className={styles.button} disabled={isSaving}>
+          {isSaving ? t('pecaModal.actions.saving') : t('pecaModal.actions.save')}
         </button>
       </form>
     </Modal>
