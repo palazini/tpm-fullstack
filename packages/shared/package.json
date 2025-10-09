@@ -5,12 +5,7 @@
   "type": "commonjs",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
-    }
-  },
+  "exports": { ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" } },
   "files": ["dist"],
   "scripts": {
     "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
@@ -22,6 +17,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
-    "typescript": "^5.9"
+    "typescript": "^5.9",
+    "@types/node": "^22.5.0"
   }
 }
