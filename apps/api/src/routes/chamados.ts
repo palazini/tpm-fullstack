@@ -10,7 +10,7 @@ import {
   ObservacaoSchema,
 } from "@manutencao/shared";
 
-export const chamadosRouter = Router();
+export const chamadosRouter: Router = Router();
 
 // ---------- Chamados: lista com filtros + paginação ----------
 chamadosRouter.get("/chamados", async (req, res) => {

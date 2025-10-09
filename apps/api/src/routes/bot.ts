@@ -7,7 +7,7 @@ import { requireRole } from "../middlewares/requireRole";
 // ===================================================================
 // Pzini ChatBot (rule-based) — SQL seguro com guardrails
 // ===================================================================
-export const botRouter = Router();
+export const botRouter: Router = Router();
 
 // ------------------------- util: cache simples ----------------------
 type CacheVal = { rows: any[]; fields: string[]; ts: number; summary?: string; suggestions?: string[] };

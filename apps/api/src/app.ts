@@ -1,5 +1,6 @@
-import express from 'express';
-import cors from 'cors';
+// apps/api/src/app.ts
+import express, { type Express } from 'express';
+import cors, { type CorsOptions } from 'cors';
 
 import { userFromHeader } from './middlewares/userFromHeader';
 import { eventsRouter } from './routes/events';
@@ -16,15 +17,16 @@ import { analyticsRouter } from './routes/analytics';
 import { botRouter } from './routes/bot';
 import { env } from './config/env';
 
-const app = express();
+export const app: Express = express(); // 👈 evita o TS2742
 
-const ALLOW = env.cors.allowedOrigins;
+const ALLOW = [...env.cors.allowedOrigins]; // 👈 clona para array mutável
 
-app.use(cors({
-  // se não definir CORS_ORIGINS, libera tudo (útil p/ dev)
-  origin: ALLOW.length ? ALLOW : true,
-}));
+const corsOptions: CorsOptions = {
+  origin: ALLOW.length ? (ALLOW as (string | RegExp)[]) : true,
+  credentials: true,
+};
 
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(userFromHeader);
 
@@ -40,5 +42,3 @@ app.use(authRouter);
 app.use(checklistsRouter);
 app.use(analyticsRouter);
 app.use(botRouter);
-
-export { app };

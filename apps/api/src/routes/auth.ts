@@ -2,7 +2,7 @@ import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import { pool } from '../db';
 
-export const authRouter = Router();
+export const authRouter: Router = Router();
 
 authRouter.post('/auth/login', async (req, res) => {
   try {

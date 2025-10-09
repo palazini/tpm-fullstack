@@ -4,7 +4,7 @@ import { sseBroadcast } from '../utils/sse';
 import { requireRole } from '../middlewares/requireRole'; // ajuste o caminho se necessário
 import { userFromHeader } from '../middlewares/userFromHeader';
 
-export const maquinasRouter = Router();
+export const maquinasRouter: Router = Router();
 
 maquinasRouter.get("/maquinas", async (req, res) => {
   try {

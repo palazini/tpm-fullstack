@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import { pool } from '../db';
 import { roleToFuncao } from '../utils/roles';
 
-export const usuariosRouter = Router();
+export const usuariosRouter: Router = Router();
 
 usuariosRouter.get('/usuarios', async (req, res) => {
   try {

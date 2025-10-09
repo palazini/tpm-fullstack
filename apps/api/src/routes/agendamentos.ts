@@ -64,7 +64,7 @@ function normalizeChecklist(raw: unknown): ChecklistItem[] {
   return [];
 }
 
-export const agendamentosRouter = Router();
+export const agendamentosRouter: Router = Router();
 
 /* =========================
    2.2 - AGENDAMENTOS PREVENTIVOS

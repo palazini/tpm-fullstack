@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { pool } from '../db';
 
-export const healthRouter = Router();
+export const healthRouter: Router = Router();
 
 healthRouter.get('/health', async (_req, res) => {
   try {

@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { pool } from '../db';
 
-export const analyticsRouter = Router();
+export const analyticsRouter: Router = Router();
 
 type ParetoRow = { causa: string; chamados: number };
 

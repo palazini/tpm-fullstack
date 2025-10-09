@@ -3,7 +3,7 @@ import { pool } from '../db';
 import { slugify } from '../utils/slug';
 import { sseBroadcast } from '../utils/sse';
 
-export const checklistsRouter = Router();
+export const checklistsRouter: Router = Router();
 
 checklistsRouter.post('/checklists/daily/submit', async (req, res) => {
   try {

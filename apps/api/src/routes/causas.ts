@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { pool } from '../db';
 
-export const causasRouter = Router();
+export const causasRouter: Router = Router();
 
 causasRouter.get('/causas', async (_req, res) => {
   try {

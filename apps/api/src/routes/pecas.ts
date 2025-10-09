@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { pool, withTx } from '../db';
 import { sseBroadcast } from '../utils/sse';
 
-export const pecasRouter = Router();
+export const pecasRouter: Router = Router();
 
 pecasRouter.post('/pecas', async (req, res) => {
   try {
