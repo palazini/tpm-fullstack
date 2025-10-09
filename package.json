@@ -8,6 +8,9 @@
     "typecheck": "pnpm -r typecheck",
     "lint": "pnpm -r lint",
     "format": "pnpm -r format"
+  },
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "pg": "^8.16.3"
   }
 }
-
