@@ -10,8 +10,10 @@
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "skipLibCheck": true,
-    "composite": true
+    "composite": true,
+    "typeRoots": ["./src/types", "./node_modules/@types"],
+    "types": ["node", "express"]
   },
   "references": [{ "path": "../../packages/shared" }],
-  "include": ["src"]
+  "include": ["src/**/*.ts", "src/types/**/*.d.ts"]
 }

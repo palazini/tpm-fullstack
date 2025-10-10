@@ -3,12 +3,8 @@ import { env } from "../config/env";
 import { pool } from "../db";
 import { DEFAULT_ROLE, normalizeRole } from "../auth/roles";
 
-const AUTH_STRICT = env.auth.strict;
-
-type RequestUser = NonNullable<Request["user"]>;
-
 type DbUserRow = {
-  id: number | null;
+  id: string | null;   // UUID no banco
   nome: string | null;
   email: string | null;
   role: string | null;
@@ -16,57 +12,61 @@ type DbUserRow = {
 
 export async function userFromHeader(req: Request, res: Response, next: NextFunction) {
   try {
-    const email = String(req.header("x-user-email") || "").trim();
+    const emailHdr = req.header("x-user-email");
+    const nomeHdr =
+      req.header("x-user-nome") ??
+      req.header("x-user-name") ??
+      undefined;
 
-    // se já foi autenticado por JWT e tem req.user, não mexe
+    // já autenticado? não mexe
     if (req.user?.id) return next();
 
+    const email = emailHdr ? String(emailHdr).trim() : "";
     if (!email) {
       req.user = undefined;
       return next();
     }
 
-    // 🔎 AGORA buscamos também o role no DB
     const { rows } = await pool.query<DbUserRow>(
-      `SELECT id, nome, email, role
-         FROM public.usuarios
-        WHERE lower(email) = lower($1)
-        LIMIT 1`,
+      `
+      SELECT id::text, nome, email, role
+      FROM public.usuarios
+      WHERE LOWER(email) = LOWER($1)
+      LIMIT 1
+      `,
       [email]
     );
 
+    // não achou
     if (!rows.length) {
-      if (AUTH_STRICT) {
+      if (env.auth.strict) {
         return res.status(401).json({ error: "USUARIO_NAO_CADASTRADO" });
       }
-      // modo DEV (não-estrito): cria um usuário "temporário" com operador
-      const fallbackUser: RequestUser = {
-        id: undefined,
+      // modo não-estrito: cria user temporário
+      req.user = {
+        id: undefined,                    // sem UUID no banco
         email,
-        name: null,
+        nome: nomeHdr ?? null,            // <-- use null (não undefined)
+        name: nomeHdr ?? null,            // alias
         role: DEFAULT_ROLE,
       };
-      req.user = fallbackUser;
       return next();
     }
 
-    const row = rows[0]!;
+    // achou
+    const row = rows[0];
 
-    // ✅ SEMPRE usar o role vindo do DB (ignorar x-user-role)
-    const requestUser: RequestUser = {
-      id: row.id ?? undefined,
-      email: row.email ?? email,
-      name: row.nome ?? null,
-      role: normalizeRole(row.role),
+    req.user = {
+      id: row.id ?? undefined,                            // string | undefined
+      email: row.email ?? email,                          // string
+      nome: (row.nome ?? nomeHdr) ?? null,               // string | null
+      name: (row.nome ?? nomeHdr) ?? null,               // string | null (alias)
+      role: normalizeRole(row.role),                      // normaliza
     };
-
-    req.user = requestUser;
 
     return next();
   } catch (error) {
     console.error("userFromHeader", error);
-    const normalizedError =
-      error instanceof Error ? error : new Error("userFromHeader middleware failed");
-    return next(normalizedError);
+    return next(error instanceof Error ? error : new Error("userFromHeader middleware failed"));
   }
 }
