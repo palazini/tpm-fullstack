@@ -1,9 +1,10 @@
 // src/services/apiClient.js
+// ===== BASE =====
 export const BASE = (
   import.meta.env?.VITE_API_URL ||
-  import.meta.env?.VITE_API_BASE ||        // opcional: aceita os dois nomes
+  import.meta.env?.VITE_API_BASE || // compat antigo
   "http://localhost:3000"
-).replace(/\/+$/, ""); // remove barra no final
+).replace(/\/+$/, "");
 
 // Tenta descobrir o e-mail salvo pelo app (ajuste as chaves se necessario)
 function getLoggedUserEmail() {
@@ -21,9 +22,21 @@ function getLoggedUserEmail() {
   return '';
 }
 
+function getDevEmail() {
+  try {
+    return (localStorage.getItem('devEmail') || '').trim().toLowerCase();
+  } catch {}
+  return '';
+}
+
 function buildAuthHeaders(auth = {}) {
-  const h = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
-  const email = String(auth?.email ?? getLoggedUserEmail() ?? '').trim().toLowerCase();
+  const h = { 'Accept': 'application/json' };
+  const email = String(
+    auth?.email ||
+    getDevEmail() ||
+    getLoggedUserEmail() ||
+    ''
+  ).trim().toLowerCase();
 
   if (email) h['x-user-email'] = email;
   // papel via header é opcional; o back usa o role do DB
@@ -31,6 +44,59 @@ function buildAuthHeaders(auth = {}) {
 
   return h;
 }
+
+// ===== HTTP base (fetch) =====
+
+function toQuery(params = {}) {
+  const usp = new URLSearchParams();
+  Object.entries(params).forEach(([k, v]) => {
+    if (v === undefined || v === null || v === "") return;
+    usp.append(k, String(v));
+  });
+  const s = usp.toString();
+  return s ? `?${s}` : "";
+}
+
+async function apiFetch(path, { method = "GET", headers = {}, body, auth } = {}) {
+  const url = `${BASE}${path}`;
+  const h = { ...buildAuthHeaders(auth), ...headers };
+  const init = { method, headers: h };
+
+  if (body !== undefined) {
+    // envia JSON por padrão
+    if (!("Content-Type" in h)) h["Content-Type"] = "application/json";
+    init.body = typeof body === "string" ? body : JSON.stringify(body);
+  }
+
+  // Abort por segurança (timeout simples)
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), 30_000);
+  init.signal = ctrl.signal;
+
+  let res;
+  try {
+    res = await fetch(url, init);
+  } finally {
+    clearTimeout(t);
+  }
+
+  const ct = String(res.headers.get("content-type") || "");
+  const isJson = ct.includes("application/json");
+  const payload = isJson ? await res.json().catch(() => null) : await res.text();
+
+  if (!res.ok) {
+    const msg = isJson ? (payload?.error || payload?.message || res.statusText) : res.statusText;
+    throw new Error(msg || `HTTP ${res.status}`);
+  }
+  return payload;
+}
+
+// GET/POST helpers
+export const http = {
+  get: (path, { params, ...opts } = {}) => apiFetch(`${path}${toQuery(params)}`, opts),
+  post: (path, { data, ...opts } = {}) => apiFetch(path, { method: "POST", body: data, ...opts }),
+};
+
 export async function criarChamado({
   maquinaTag,
   maquinaNome,
@@ -64,7 +130,10 @@ export async function criarChamado({
 
   const res = await fetch(`${BASE}/chamados`, {
     method: 'POST',
-    headers: buildAuthHeaders({ role: auth.role || 'operador', email: auth.email }),
+    headers: {
+      ...buildAuthHeaders({ role: auth.role || 'operador', email: auth.email }),
+      'Content-Type': 'application/json'
+    },
     body: JSON.stringify(body)
   });
 
@@ -122,20 +191,16 @@ export async function getMaquinas(q = "") {
   return res.json();
 }
 
-export async function criarMaquina({ nome, tag, setor, critico }) {
-  const res = await fetch(`${BASE}/maquinas`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
+export async function criarMaquina({ nome, tag, setor, critico }, auth = {}) {
+  return http.post(`/maquinas`, {
+    data: {
       nome,
-      tag: tag ?? nome,       // se nÃ£o mandar tag, usa o nome
+      tag: tag ?? nome,       // se nao mandar tag, usa o nome
       setor: setor ?? null,
       critico: !!critico
-    })
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data?.error || `Erro ao criar mÃ¡quina (${res.status})`);
-  return data; // { id, nome, tag, setor, critico }
+    },
+    auth,
+  }); // { id, nome, tag, setor, critico }
 }
 
 export async function listarAgendamentos(params = {}) {
@@ -148,36 +213,26 @@ export async function listarAgendamentos(params = {}) {
   return data; // array
 }
 
-export async function criarAgendamento({ maquinaId, descricao, itensChecklist, start, end }) {
-  const res = await fetch(`${BASE}/agendamentos`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ maquinaId, descricao, itensChecklist, start, end })
+export async function criarAgendamento({ maquinaId, descricao, itensChecklist, start, end }, auth = {}) {
+  return http.post(`/agendamentos`, {
+    data: { maquinaId, descricao, itensChecklist, start, end },
+    auth,
   });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data?.error || `Erro ao criar agendamento (${res.status})`);
-  return data;
 }
 
-export async function atualizarAgendamento(id, { start, end, status }, headers = {}) {
-  const res = await fetch(`${BASE}/agendamentos/${id}`, {
+export async function atualizarAgendamento(id, { start, end, status }, auth = {}) {
+  return apiFetch(`/agendamentos/${id}`, {
     method: "PATCH",
-    headers: { "Content-Type": "application/json", ...headers },
-    body: JSON.stringify({ start, end, status })
+    body: { start, end, status },
+    auth,
   });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data?.error || `Erro ao atualizar agendamento (${res.status})`);
-  return data;
 }
 
-export async function excluirAgendamento(id, headers = {}) {
-  const res = await fetch(`${BASE}/agendamentos/${id}`, {
+export async function excluirAgendamento(id, auth = {}) {
+  return apiFetch(`/agendamentos/${id}`, {
     method: "DELETE",
-    headers
+    auth,
   });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data?.error || `Erro ao excluir agendamento (${res.status})`);
-  return data;
 }
 
 export async function iniciarAgendamento(id, { criadoPorEmail, role, email }) {
@@ -196,11 +251,8 @@ export async function iniciarAgendamento(id, { criadoPorEmail, role, email }) {
 }
 
 // Detalhe
-export async function getChamado(id) {
-  const res = await fetch(`${BASE}/chamados/${id}`);
-  const data = await res.json();
-  if (!res.ok) throw new Error(data?.error || `Erro ao buscar chamado (${res.status})`);
-  return data; // { id, maquina, tipo, status, descricao, criado_por, ... }
+export async function getChamado(id, auth = {}) {
+  return apiFetch(`/chamados/${id}`, { auth }); // { id, maquina, tipo, status, descricao, criado_por, ... }
 }
 
 // Manutentores (para atribuiÃ§Ã£o)
@@ -247,26 +299,19 @@ export async function removerAtribuicao(id, { role, email }) {
   return data;
 }
 // Assumir (MANUTENTOR ou gestor) — atribui ao usuário logado e põe Em Andamento
-export async function assumirChamado(id, { role, email }) {
-  const r = await fetch(`${BASE}/chamados/${id}/assumir`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-role': role, 'x-email': email },
+export async function assumirChamado(id, { role, email } = {}) {
+  return http.post(`/chamados/${id}/assumir`, {
+    data: {},
+    auth: { role, email },
   });
-  const data = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(data?.error || `Erro ao assumir (${r.status})`);
-  return data;
 }
 
 // Trocar status (gestor pode qualquer; manutentor designado pode Em Andamento/Concluido)
-export async function atualizarStatusChamado(id, status, { role, email }) {
-  const r = await fetch(`${BASE}/chamados/${id}/status`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-role': role, 'x-email': email },
-    body: JSON.stringify({ status }),
+export async function atualizarStatusChamado(id, status, { role, email } = {}) {
+  return http.post(`/chamados/${id}/status`, {
+    data: { status },
+    auth: { role, email },
   });
-  const data = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(data?.error || `Erro ao atualizar status (${r.status})`);
-  return data;
 }
 export async function atenderChamado(id, auth = {}) {
   const res = await fetch(`${BASE}/chamados/${id}/atender`, {
@@ -482,14 +527,9 @@ export async function excluirCausa(id, auth) {
   return j;
 }
 
-export async function listarUsuarios(opts = {}) {
-  const u = new URL(`${BASE}/usuarios`);
-  if (opts.role) u.searchParams.set('role', String(opts.role))
-  const r = await fetch(u.toString());
-  const ct = r.headers.get('content-type') || '';
-  const j = ct.includes('application/json') ? await r.json() : { error: await r.text() };
-  if (!r.ok) throw new Error(j?.error || `Falha ao listar usuÃ¡rios (${r.status})`);
-  return j.items ?? j; // array
+export async function listarUsuarios(opts = {}, auth = {}) {
+  const data = await http.get(`/usuarios`, { params: opts, auth });
+  return Array.isArray(data?.items) ? data.items : data; // array
 }
 
 export async function criarUsuario(data, { role, email } = {}) {
@@ -658,7 +698,10 @@ export async function enviarChecklistPreventiva(chamadoId, { respostas }) {
 export async function atualizarChecklistChamado(id, checklist, auth = {}) {
   const res = await fetch(`${BASE}/chamados/${id}/checklist`, {
     method: 'PATCH',
-    headers: buildAuthHeaders({ role: auth.role || "manutentor", email: auth.email }),
+    headers: {
+      ...buildAuthHeaders({ role: auth.role || "manutentor", email: auth.email }),
+      'Content-Type': 'application/json'
+    },
     body: JSON.stringify({
       checklist,
       userEmail: auth.email || getLoggedUserEmail() || ""
@@ -746,7 +789,10 @@ export async function aiChatSql({ question, noCache = false } = {}, auth = {}) {
 
   const res = await fetch(`${BASE}/ai/chat/sql`, {
     method: 'POST',
-    headers: buildAuthHeaders(auth),
+    headers: {
+      ...buildAuthHeaders(auth),
+      'Content-Type': 'application/json'
+    },
     body: JSON.stringify({ question, noCache: !!noCache })
   });
 
@@ -764,7 +810,10 @@ export async function aiTextSearch({ q, limit = 20 } = {}, auth = {}) {
 
   const res = await fetch(`${BASE}/ai/chat/text`, {
     method: 'POST',
-    headers: buildAuthHeaders(auth),
+    headers: {
+      ...buildAuthHeaders(auth),
+      'Content-Type': 'application/json'
+    },
     body: JSON.stringify({ q, limit })
   });
 

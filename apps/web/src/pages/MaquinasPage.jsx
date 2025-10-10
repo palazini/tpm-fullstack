@@ -106,7 +106,10 @@ const MaquinasPage = () => {
       return;
     }
     try {
-      const nova = await criarMaquina({ nome: nomeNovaMaquina.trim() });
+      const nova = await criarMaquina(
+        { nome: nomeNovaMaquina.trim() },
+        { email: user?.email, role: user?.role }
+      );
       setMaquinas((prev) => [nova, ...prev].sort((a, b) => a.nome.localeCompare(b.nome, 'pt')));
       toast.success(t('maquinas.toasts.created', { name: nomeNovaMaquina }));
       setNomeNovaMaquina('');

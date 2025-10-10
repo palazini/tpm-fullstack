@@ -203,13 +203,16 @@ export default function CalendarioGeralPage({ user }) {
       return toast.error(t('calendarioGeral.toasts.fillAll'));
     }
 
-    await criarAgendamento({
-      maquinaId: selMachine,
-      descricao: toPlainText(descAgendamento),
-      itensChecklist: itensArray,
-      start: slotInfo.start.toISOString(),
-      end:   slotInfo.end.toISOString()
-    });
+    await criarAgendamento(
+      {
+        maquinaId: selMachine,
+        descricao: toPlainText(descAgendamento),
+        itensChecklist: itensArray,
+        start: slotInfo.start.toISOString(),
+        end:   slotInfo.end.toISOString()
+      },
+      { email: user?.email, role: user?.role }
+    );
 
     toast.success(t('calendarioGeral.toasts.created'));
     setShowNew(false);
@@ -239,10 +242,7 @@ export default function CalendarioGeralPage({ user }) {
   const handleDeleteAgendamento = async () => {
     if (!window.confirm(t('calendarioGeral.confirm.delete', { title: selectedEvent.title }))) return;
     try {
-      await excluirAgendamento(selectedEvent.id, {
-        "x-user-role": user.role,
-        "x-user-email": user.email
-      });
+      await excluirAgendamento(selectedEvent.id, { email: user?.email, role: user?.role });
       toast.success(t('calendarioGeral.toasts.deleted'));
       setSelectedEvent(null);
       setReloadTick((n) => n + 1);
@@ -320,7 +320,7 @@ export default function CalendarioGeralPage({ user }) {
                         await atualizarAgendamento(
                           event.id,
                           { start: nextStart.toISOString(), end: nextEnd.toISOString() },
-                          { "x-user-role": user.role, "x-user-email": user.email }
+                          { email: user?.email, role: user?.role }
                         );
                         setReloadTick((n) => n + 1);
                       } catch (err) {
