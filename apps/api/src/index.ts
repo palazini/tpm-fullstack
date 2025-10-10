@@ -1,8 +1,9 @@
+// apps/api/src/index.ts
 import { app } from './app';
-import { env } from './config/env';
 
-const port = env.server.port;
+const PORT = Number(process.env.PORT || 3000);
+const HOST = '0.0.0.0';
 
-app.listen(port, () => {
-  console.log(`API rodando em http://localhost:${port}`);
+app.listen(PORT, HOST, () => {
+  console.log(`API rodando em http://${HOST}:${PORT}`);
 });
